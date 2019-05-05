@@ -30,21 +30,25 @@ begin
   if ParamCount<1 then begin
     Writeln('Si la vitesse de cette superbe animation ne vous convient pas');
     WriteLn('Vous pouvez la configurer.');
-    WriteLn('Il suffit d''entrer la valeur de la vitesse en paramŠtres au moment ');
-    WriteLn('de lancer le programme.');
-    WriteLn('Plus le nombre est grand, plus c''est lent');
-    WriteLn('Mettez plut“t des nombres comme 5 ou 6, mais pas plus');
-    Readkey;
-    While keypressed do Readkey;
+    WriteLn('Il suffit d''indiquer un nombre en parametres');
+    WriteLn('au moment de lancer le programme.');
+    WriteLn('Plus le nombre est grand, plus c''est lent.');
+    WriteLn('Mettez plutot des nombres comme 5 ou 6, mais pas plus.');
+    { 2019-05-05 : D‚sactivation de l'attente d'appuyer sur une touche.
+      On ne voit plus le texte affich‚ au d‚part, mais il faut bien avouer que osef, un peu.
+      Et comme ‡a, ‡a lance l'anim tout de suite
+    }
+    {Readkey;}
+    {While keypressed do Readkey;}
     Vitesse:=1;
   end else begin
     Val (ParamStr(1),Vitesse,a);
     if a<>0 then begin
-      Write('Imb‚cile!!! Vous devez ‚crire un nombre!!!');
+      Write('Imbecile!!! Vous devez ecrire un nombre!!!');
       Exit;
     end;
     if Vitesse<0 then begin
-      Write('Imb‚cile!!! Il faut mettre un nombre positif!!');
+      Write('Imbecile!!! Il faut mettre un nombre positif!!');
       Exit;
     end;
   end;
@@ -125,8 +129,11 @@ begin
         Fini[i]:=Fini[i]+1;
         if Fini[i]=100 then Fusee[i]:=0;
       end;
-      Delay(Vitesse);
     end;
+    { 2019-05-05 : D‚placement du Delay en dehors de la boucle. Sinon c'est vraiment trop lent.
+      (Comment j'ai pu faire une erreur aussi idiote, mˆme … l'‚poque ?)
+    }
+    Delay(Vitesse);
   Until KeyPressed;
 end.
 
