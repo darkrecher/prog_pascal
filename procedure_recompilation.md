@@ -30,11 +30,8 @@ Télécharger ou cloner ce repository sur votre disque.
 
 Dans la suite de cette documentation, on supposera que le contenu de ce repository a été placé dans `C:\repo_git\prog_pascal`
 
+Tous les fichiers *.pas utilisent l'encodage de caractère du MS-DOS : CP 437
 
-
-
-encoding :
-CP 437
 https://fr.wikipedia.org/wiki/Page_de_code_437
 
 
