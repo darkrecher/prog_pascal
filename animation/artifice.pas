@@ -2,18 +2,18 @@ uses Graph,Crt;
 
 Type
   Spark=Record
-    Y,XenPlus,YenPlus,X,FinX,FinY:Integer;{FinX et FinY:les coordonn‚es du pixel}
-  end;                                 {qui est … l'extremit‚ et qui doit ˆtre}
-                                       {effac‚}
+    Y,XenPlus,YenPlus,X,FinX,FinY:Integer;{FinX et FinY:les coordonnées du pixel}
+  end;                                 {qui est à l'extremité et qui doit être}
+                                       {effacé}
 
 Var
-  Artif:Array[0..5,0..19] of Spark; {il y a toujours 6 fus‚es … l'ecran}
+  Artif:Array[0..5,0..19] of Spark; {il y a toujours 6 fusées à l'ecran}
   a,i,Vitesse:Integer;
   WhichSpark:0..20;
   Fini:Array[0..5] of Integer;
   Variab:Array[0..5] of Integer;{Variab:indique quand la fusee doit exploser, et indique la couleur de l'explosion}
-  Fusee:Array[0..5] of 0..3;{0:Creer  une nouvelle fus‚e,1:la fus‚e part}
-                            {2:Cr‚er les etincelles,3:les ‚tincelles se dispersent}
+  Fusee:Array[0..5] of 0..3;{0:Creer  une nouvelle fusée,1:la fusée part}
+                            {2:Créer les etincelles,3:les étincelles se dispersent}
 Procedure Baoum(u,v:Integer);
 begin
   With Artif[u,v] do begin
@@ -30,13 +30,12 @@ begin
   if ParamCount<1 then begin
     Writeln('Si la vitesse de cette superbe animation ne vous convient pas');
     WriteLn('Vous pouvez la configurer.');
-    WriteLn('Il suffit d''indiquer un nombre en parametres');
-    WriteLn('au moment de lancer le programme.');
+    WriteLn('Il suffit d''indiquer un nombre en paramètres au moment de lancer le programme.');
     WriteLn('Plus le nombre est grand, plus c''est lent.');
-    WriteLn('Mettez plutot des nombres comme 5 ou 6, mais pas plus.');
-    { 2019-05-05 : D‚sactivation de l'attente d'appuyer sur une touche.
-      On ne voit plus le texte affich‚ au d‚part, mais il faut bien avouer que osef, un peu.
-      Et comme ‡a, ‡a lance l'anim tout de suite
+    WriteLn('Mettez plutôt un nombre comme 5 ou 6, mais pas plus.');
+    { 2019-05-05 : Désactivation de l'attente d'appuyer sur une touche.
+      On ne voit plus le texte affiché au départ, mais il faut bien avouer que osef, un peu.
+      Et comme ça, ça lance l'anim tout de suite
     }
     {Readkey;}
     {While keypressed do Readkey;}
@@ -44,11 +43,11 @@ begin
   end else begin
     Val (ParamStr(1),Vitesse,a);
     if a<>0 then begin
-      Write('Imbecile!!! Vous devez ecrire un nombre!!!');
+      Write('Imbécile!!! Vous devez écrire un nombre!!!');
       Exit;
     end;
     if Vitesse<0 then begin
-      Write('Imbecile!!! Il faut mettre un nombre positif!!');
+      Write('Imbécile!!! Il faut mettre un nombre positif!!');
       Exit;
     end;
   end;
@@ -130,8 +129,8 @@ begin
         if Fini[i]=100 then Fusee[i]:=0;
       end;
     end;
-    { 2019-05-05 : D‚placement du Delay en dehors de la boucle. Sinon c'est vraiment trop lent.
-      (Comment j'ai pu faire une erreur aussi idiote, mˆme … l'‚poque ?)
+    { 2019-05-05 : Déplacement du Delay en dehors de la boucle. Sinon c'est vraiment trop lent.
+      (Comment j'ai pu faire une erreur aussi idiote, même à l'époque ?)
     }
     Delay(Vitesse);
   Until KeyPressed;

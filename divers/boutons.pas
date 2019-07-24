@@ -166,7 +166,7 @@ begin
   if P<>Nil then begin
     P^.Enabled:=NewStatus;
     if not(Self.IsThereOneTrue) then P^.Enabled:=True;
-    {cette ligne sert … empˆcher que tout soit Disabled, ce qui peut ˆtre gˆnant}
+    {cette ligne sert à empêcher que tout soit Disabled, ce qui peut être gênant}
   end;
 end;
 
@@ -349,7 +349,7 @@ begin
   Entities^.Insert(New(PTextInfo,Init(10,18,20,1,1,
   New(PInfoStr,Init('Cretin',True,
   New(PInfoStr,Init('Patate',True,
-  New(PInfoStr,Init('Debile',True,Nil)))))),True,Insultes,'Qualit‚','q',PEntity(Entities^.At(3)))));
+  New(PInfoStr,Init('Debile',True,Nil)))))),True,Insultes,'Qualité','q',PEntity(Entities^.At(3)))));
   PButton(Entities^.At(0))^.Next:=PEntity(Entities^.At(4));
   SelectedEnt:=PEntity(Entities^.At(0));
 end;
