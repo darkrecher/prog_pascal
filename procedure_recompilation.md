@@ -13,6 +13,8 @@ Sélectionnez "Download", puis "Windows 64-bit", puis n'importe quelle site de t
 
 Vous récupérerez un fichier ayant ce nom : `fpc-3.0.4.i386-win32.exe` (Le numéro de version 3.0.4 peut avoir changé).
 
+Pour info, les liens sont les mêmes, et le fichier téléchargé est le même, que l'on choisisse "Windows 32-bit" ou "Windows 64-bit".
+
 Exécuter ce fichier pour installer le compilateur.
 
 Sélectionner "Full installation".
