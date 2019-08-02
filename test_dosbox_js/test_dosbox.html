@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>Digger js-dos 6.22</title>
-  <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
+  <script src="js-dos.js"></script>
   <style>
     canvas {
       width: 640px;
@@ -17,10 +17,12 @@
   <canvas id="jsdos"></canvas>
   <script>
     Dos(document.getElementById("jsdos"), {
-        wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js"
+        //wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js"
+        wdosboxUrl: "wdosbox.js"
     }).ready((fs, main) => {
-      fs.extract("https://js-dos.com/6.22/current/test/digger.zip").then(() => {
-        main(["-c", "DIGGER.COM"])
+      //fs.extract("https://js-dos.com/6.22/current/test/digger.zip").then(() => {
+      fs.extract("plasma3.zip").then(() => {
+        main(["-c", "PLASMA3.EXE"])
       });
     });
   </script>
