@@ -16,3 +16,15 @@ Pour réussir à refaire marcher tous ces programmes, il a été envisagé de re
 
 Quelques tests rapides ont été réalisés dans le cadre de cette première approche. Voir : [libs/test_sdl.md](libs/test_sdl.md).
 
+Mais cette approche aurait nécessité une certaine quantité de temps, que je n'ai pas. Il existe une solution plus simple, qui permettrait de profiter directement de mes anciennes créations, sans rien avoir à installer.
+
+
+## Test de js-dos
+
+Js-dos est une librairie JavaScript, basé sur DosBox, permettant d'exécuter des programmes du système d'exploitation "DOS", dans un navigateur internet.
+
+J'y ai pas cru au début, mais il semblerait que ça marche. Même avec des "vrais" jeux.
+
+Voir : [https://github.com/caiiiycuk/js-dos](https://github.com/caiiiycuk/js-dos).
+
+
