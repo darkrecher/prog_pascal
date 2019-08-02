@@ -1,8 +1,6 @@
 # Méthode de recompilation
 
-Ce document permet de reconstruire tous les fichiers .exe qui sont présents dans ce repository.
-
-Il devrait également permettre de créer des exécutables binaires pour d'autres systèmes (Mac, Linux, ...). Mais cela n'a pas été testé.
+Ce document permet de reconstruire certains fichiers .exe de ce repository.
 
 
 ## Récupération du compilateur
@@ -34,7 +32,7 @@ Dans la suite de cette documentation, on supposera que le contenu de ce reposito
 
 Ils ont été reconvertis en "Western Windows 1252", afin que les informations écrites sur la sortie standard s'affichent mieux dans la console. (Désolé si votre console n'est pas dans cet encodage, c'est ce que j'ai chez moi).
 
-Le premier commit de chaque fichier .pas est tel qu'il était lorsque je l'ai codé à l'époque, encodé en CP 437. Les commits suivants changent l'encodage et éventuellement apportent des modifs diverses.
+Le premier commit de chaque fichier .pas est tel qu'il était lorsque je l'ai codé à l'époque, encodé en CP 437. Les commits suivants apportent éventuellement des modifs.
 
 Les accents et autres caractères spéciaux s'affichent mal lorsqu'on ouvre les fichiers dans l'IDE de Free Pascal. Le but de ce repository est d'avoir des codes sources et des exécutables qui fonctionnent le mieux possible avec les machines modernes. Tant pis si pour cela, il faut faire une petite entorse aux souvenirs de cette ancienne époque.
 
@@ -44,7 +42,7 @@ L'IDE de Free Pascal n'est pas nécessaire pour recompiler les codes sources. Il
 
 Pour vérifier si cet outil est disponible, il faut ouvrir une invite de commande MS-DOS, et écrire `fpc`. Si un grand texte d'information s'affiche, c'est OK.
 
-Si un message indiquant que ce programme n'est pas reconnu, c'est que le répertoire des binaires du Free Pascal n'a pas été ajoutée dans le PATH. Dans ce cas, essayez la commande `C:\PASCAL\3.0.4\bin\i386-win32\fpc.exe`. Si le texte d'informaton s'affiche, c'est OK, mais dans la suite de cette documentation, vous devrez remplacer toutes les commandes `fpc` par `C:\PASCAL\3.0.4\bin\i386-win32\fpc.exe`.
+Si un message indiquant que ce programme n'est pas reconnu, c'est que le répertoire des binaires du Free Pascal n'a pas été ajoutée dans le PATH. Dans ce cas, essayez la commande `C:\PASCAL\3.0.4\bin\i386-win32\fpc.exe`. Si le texte d'information s'affiche, c'est OK, mais dans la suite de cette documentation, vous devrez remplacer toutes les commandes `fpc` par `C:\PASCAL\3.0.4\bin\i386-win32\fpc.exe`.
 
 Si ce n'est toujours pas OK, c'est que le Free Pascal a été installé à un autre endroit de votre disque. Dans ce cas, re-essayer la commande précédente, en remplaçant `C:\PASCAL\3.0.4\` par votre emplacement d'installation.
 
