@@ -1,0 +1,90 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+
+  <style>
+    canvas {
+      width: 640px;
+      height: 480px;
+    }
+    .button-zoom {
+      padding: 0.8em;
+      background-color: #A0A0A0;
+    }
+    .buttons {
+      margin-bottom: 1em;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <h1 id="app_title">Le titre</h1>
+
+  <div class="buttons">
+    <span class="button-zoom" id="zoom_out">-</span>
+    <span class="button-zoom" id="zoom_in">+</span>
+  </div>
+
+  <div class="jsdos-container">
+    <canvas id="jsdos"></canvas>
+  </div>
+
+  <script src="../js_dos/js-dos.js"></script>
+  <script>
+
+    function get_app_filename() {
+      url = window.location.href
+      pos_url_params = url.indexOf("?")
+      if (pos_url_params == -1) {
+        return null
+      }
+      params = url.slice(pos_url_params+1)
+      params = params.split("&")
+      // On prend que le premier param.
+      // Osef, il est pas censé y'en avoir d'autres.
+      param = params[0]
+      name_and_val = param.split("=")
+      if (name_and_val.length != 2) {
+        return null
+      }
+      name = name_and_val[0]
+      if (name != "appfilename") {
+        return null
+      }
+      return name_and_val[1]
+    }
+
+    function load_app(app_filename) {
+
+      Dos(document.getElementById("jsdos"), {
+          wdosboxUrl: "../js_dos/wdosbox.js"
+      }).ready((fs, main) => {
+        fs.extract(app_filename + ".zip").then(() => {
+          main(["-c", app_filename + ".exe"])
+        });
+      });
+
+    }
+
+    // onload, mais je sais plus comment appeler le truc.
+
+    app_filename = get_app_filename()
+    if (app_filename == null) {
+      // TODO : redirection vers la page prinicipale
+    } else {
+      node_title = document.getElementById("app_title")
+      node_title.innerHTML = app_filename
+      console.log(app_filename)
+      load_app(app_filename)
+    }
+
+  </script>
+
+</body>
+
+</html>
