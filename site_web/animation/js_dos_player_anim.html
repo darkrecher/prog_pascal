@@ -6,12 +6,28 @@
   <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
 
   <style>
+    @font-face {
+      font-family: 'IbmVga8';
+      src:  url('../img/ibm_vga8.woff2') format('woff2');
+    }
     canvas {
       width: 800px;
       height: 600px;
     }
     body {
       background-color: #333333;
+      font-family: 'IbmVga8';
+    }
+    a {
+      color: white;
+      text-decoration: none;
+    }
+    h1 {
+      font-weight: normal;
+      font-size: 3em;
+      color: #FFFF00;
+      padding-top: 0.5em;
+      text-align: center;
     }
     .dosbox-container {
       /* cochonnerie de CSS de daube. */
@@ -39,6 +55,8 @@
 
 <body>
 
+  <a href="anim_summary.html">&lt; Retour aux animations</a>
+
   <h1 id="app_title">Le titre</h1>
 
   <div class="buttons">
@@ -50,9 +68,7 @@
     </span>
   </div>
 
-
     <canvas id="jsdos"></canvas>
-
 
   <script src="../js_dos/js-dos.js"></script>
   <script>
@@ -124,7 +140,6 @@
         set_jsdos_size(glob_width)
       }
     }
-
 
   </script>
 
