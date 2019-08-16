@@ -1,0 +1,211 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+
+  <style>
+    @font-face {
+      font-family: 'IbmVga8';
+      src:  url('../img/ibm_vga8.woff2') format('woff2');
+    }
+    body {
+      background-color: #202020;
+      font-family: 'IbmVga8';
+      color: #E0E0E0;
+    }
+    a {
+      color: white;
+      text-decoration: none;
+    }
+    a:hover {
+      color: #C0C0C0;
+    }
+    h1 {
+      font-weight: normal;
+      font-size: 3em;
+      color: #FFFF00;
+      padding-top: 0.5em;
+      text-align: center;
+    }
+    .sourcecode {
+      padding: 1em;
+      background:#000080;
+    }
+    .sourcecode pre {
+      color:#FFFF00;
+      font-family:'IbmVga8';
+    }
+    .code-keyword {
+      color:#FFFFFF;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=plasma3">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Plasma3 - Code source</h1>
+
+  <p>
+    En voilà une jolie anim.
+    <br><br>
+    J'ai eu l'idée en explorant le logiciel "fractint", un vieux truc sous DOS permettant de générer des fractales.
+    <br><br>
+    L'image était générée avec les étapes intermédiaires. Ça m'a permis de comprendre comment le faire, et j'ai eu envie de refaire pareil, car le plasma, c'est quand même bien cool.
+    <br><br>
+    Concernant le fondu entre deux images, c'est assez simple. On décale la couleur de +1 ou -1 jusqu'à arriver à la couleur de destination.
+    <br><br><br>
+    Par contre, c'est un peu lent. (Ça l'était déjà sur mon vieux PC 486). C'est pas très optimisé car il y a beaucoup de vérifications booléennes sur des pixels, pour déterminer s'il sont déjà plasmatisés ou pas.
+    <br><br>
+    De plus, ça écrit directement dans la mémoire vidéo comme un bourrin. Il n'y a pas de double buffer. Normalement, ça devrait accélérer, sauf qu'il est possible que chaque écriture dans la mémoire déclenche une interruption, et un réaffichage (complet ou partiel). Ça dépend du système. Et je ne sais pas comment js-dos gère ce genre de bourrineries.
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">uses</span> MCGAGraf,Crt;
+
+<span class="code-keyword">type</span>
+  PPixeled=^TPixeled;
+  TPixeled=<span class="code-keyword">Array</span>[0..319,0..199] <span class="code-keyword">of</span> Boolean;
+
+
+<span class="code-keyword">var</span>
+  Zoom,DivZoom:Byte;
+  i,j:Integer;
+  Pixeled:PPixeled;
+  C:Char;
+  Stop:Boolean;
+
+<span class="code-keyword">Procedure</span> PlasmaPixel(X,Y,DistX,DistY:Integer);
+<span class="code-keyword">var</span> Color:Integer;Diviseur:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Pixeled^[X,Y]=False <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Diviseur:=0;
+    Color:=0;
+    <span class="code-keyword">if</span> (X&gt;0) <span class="code-keyword">and</span> (X&lt;256) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> (Y&gt;0) <span class="code-keyword">and</span> (Y&lt;128) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Pixeled^[X-DistX,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X+DistX,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Color:=Buffer^[Y-DistY,X-DistX];
+          Inc(Color,Buffer^[Y+DistY,X+DistX]);
+          Diviseur:=2;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> Pixeled^[X+DistX,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X-DistX,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Color,Buffer^[Y-DistY,X+DistX]);
+          Inc(Color,Buffer^[Y+DistY,X-DistX]);
+          Inc(Diviseur,2);
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Pixeled^[X+DistX,Y] <span class="code-keyword">and</span> Pixeled^[X-DistX,Y] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Color,Buffer^[Y,X+DistX]);
+          Inc(Color,Buffer^[Y,X-DistX]);
+          Inc(Diviseur,2);
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> (Y&gt;0) <span class="code-keyword">and</span> (Y&lt;128) <span class="code-keyword">then</span> <span class="code-keyword">if</span> Pixeled^[X,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(Color,Buffer^[Y-DistY,X]);
+      Inc(Color,Buffer^[Y+DistY,X]);
+      Inc(Diviseur,2);
+    <span class="code-keyword">end</span>;
+    Color:=Color <span class="code-keyword">div</span> Diviseur;
+    Inc(Color,Random(DistX*Zoom <span class="code-keyword">div</span> divZoom+1)-DistX*Zoom <span class="code-keyword">div</span> (2*DivZoom));
+    <span class="code-keyword">if</span> Color&lt;0 <span class="code-keyword">then</span> Color:=0;
+    <span class="code-keyword">if</span> Color&gt;255 <span class="code-keyword">then</span> Color:=255;
+    Buffer^[Y,X]:=Color;
+    Pixeled^[X,Y]:=True;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Quadrillage(DistX,DistY:Integer);
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">div</span> DistY <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">div</span> DistX <span class="code-keyword">do</span> PlasmaPixel(i*DistX,j*DistY,DistX,DistY);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Plasma;
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> Pixeled^[i,j]:=False;
+  Pixel(0,0,Random(256));
+  Pixel(256,0,Random(256));
+  Pixel(0,128,Random(256));
+  Pixel(256,128,Random(256));
+  Pixeled^[0,0]:=True;
+  Pixeled^[0,128]:=True;
+  Pixeled^[256,0]:=True;
+  Pixeled^[256,128]:=True;
+  j:=128;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 6 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Quadrillage(j,j <span class="code-keyword">div</span> 2);
+    j:=j <span class="code-keyword">div</span> 2;
+  <span class="code-keyword">end</span>;
+  Quadrillage(1,1);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> Fondu:Boolean;
+<span class="code-keyword">var</span> i,j:Integer;Result:Boolean;Screen,Buf:Byte;
+<span class="code-keyword">begin</span>
+  Result:=True;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Screen:=Video^[j,i];
+    Buf:=Buffer^[j,i];
+    <span class="code-keyword">if</span> Screen&gt;Buf <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Dec(Video^[j,i]);
+      Result:=False;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Screen&lt;Buf <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(Video^[j,i]);
+      Result:=False;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Fondu:=Result;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  MCGAScreen;
+  Randomize;
+  New(Pixeled);
+  Degrade(0,0,0,0,127,0,0,63);
+  Degrade(128,0,0,63,255,63,63,63);
+  DefinePal;
+  C:=' ';
+  Zoom:=Random(5)+1;
+  DivZoom:=Random(5)+1;
+  Plasma;
+  AfficheAll;
+  <span class="code-keyword">Repeat</span>
+    Zoom:=Random(5)+1;
+    DivZoom:=Random(5)+1;
+    Plasma;
+    i:=0;
+    <span class="code-keyword">Repeat</span>
+      Stop:=Fondu;
+      <span class="code-keyword">if</span> Keypressed <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        C:=Readkey;
+        <span class="code-keyword">if</span> C=#27 <span class="code-keyword">then</span> Stop:=True;
+      <span class="code-keyword">end</span>;
+      Inc(i);
+      <span class="code-keyword">if</span> i=100 <span class="code-keyword">then</span> Stop:=True;
+    <span class="code-keyword">Until</span> Stop;
+  <span class="code-keyword">Until</span> C=#27;
+  CloseScreen;
+  Dispose(Pixeled);
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>

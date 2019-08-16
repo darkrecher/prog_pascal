@@ -22,6 +22,9 @@
       color: white;
       text-decoration: none;
     }
+    a:hover {
+      color: #C0C0C0;
+    }
     h1 {
       font-weight: normal;
       font-size: 3em;
@@ -55,7 +58,13 @@
 
 <body>
 
-  <a href="anim_summary.html">&lt; Retour aux animations</a>
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+
+  <div>
+    <a href="back_to_source_code.html" id="back_to_source_code">&gt; Code source</a>
+  </div>
 
   <h1 id="app_title">Le titre</h1>
 
@@ -105,7 +114,7 @@
       });
     }
 
-    // onload, mais je sais plus comment appeler le truc.
+    // TODO : onload, mais je sais plus comment appeler le truc.
 
     app_filename = get_app_filename()
     if (app_filename == null) {
@@ -113,7 +122,10 @@
     } else {
       var node_title = document.getElementById("app_title")
       node_title.innerHTML = app_filename
-      console.log(app_filename)
+      var node_source_code = document.getElementById("back_to_source_code")
+      node_source_code.setAttribute("href", app_filename + "_source_code.html")
+
+
       load_app(app_filename)
     }
 
