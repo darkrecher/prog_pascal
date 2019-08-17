@@ -1,0 +1,18 @@
+                        Le super comparatateur de fichiers
+                                TRALALALALALA!!
+
+c'est un programme qui regarde tout les octets de deux fichiers different 
+et qui indique ceux qui sont different
+les deux premiers paramätres sont les deux fichiers Ö comparer
+les deux parametres suivants sont optionnels, ils indiquent Ö quel endroit 
+de chaqe fichier la comparaison doit commencer
+exemple: compare <nom1> <nom2> 0 1
+comme áa, on peut faire des dÇcalages!!
+le troisiäme paramätres, facultatif aussi indique l'amplitude
+mais qu'est-ce que l'amplitude bazar de bordel de con de chiotte pourrite?
+eh bin par exemple, si on met une amplitude de 2: le programme 
+n'indiquera pas les octets dont la difference est inferieure Ö 2.
+vous avez compris? non? Eh bin j'm'en fous!! de toutesfaáons faut que
+j'aille me coucher.
+
+

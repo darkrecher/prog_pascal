@@ -1,0 +1,15 @@
+                  le conconcat‚natateur de fichier
+                               YEAH!!!!
+
+c'est un programme qui met plusieurs fichiers bout … bout 
+pour n'en faire qu'un seul gros fichier.
+le premier paramŠtre est le nom du fichier … cr‚er.
+tout les autres paramŠtres sont les noms des fichiers … mettre bout … bout.
+si le fichier de destination n'existe pas, il est cr‚‚.
+si il existe, les autres fichiers sont rajout‚s … la fin.
+
+Quoi keeskya? On peut faire la mˆme chose avec la commande "copy" du dos?
+Ah bin zutte, ch'savais pas, mais de toute fa‡ons le mien il est plusse b“.
+
+
+
