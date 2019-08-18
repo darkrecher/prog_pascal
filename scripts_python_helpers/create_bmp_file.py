@@ -4,6 +4,7 @@
 from struct import pack
 
 class Bitmap():
+
   def __init__(s, width, height):
     s._bfType = 19778 # Bitmap signature
     s._bfReserved1 = 0
@@ -22,7 +23,7 @@ class Bitmap():
     s._graphics = [(0,0,0)]*s._bcWidth*s._bcHeight
 
 
-  def setPixel(s, x, y, color):
+  def set_pixel(s, x, y, color):
     if isinstance(color, tuple):
       if x<0 or y<0 or x>s._bcWidth-1 or y>s._bcHeight-1:
         raise ValueError('Coords out of range')
@@ -58,12 +59,12 @@ def main():
   side = 520
   b = Bitmap(side, side)
   for j in range(0, side):
-    b.setPixel(j, j, (255, 0, 0))
-    b.setPixel(j, side-j-1, (255, 0, 0))
-    b.setPixel(j, 0, (255, 0, 0))
-    b.setPixel(j, side-1, (255, 0, 0))
-    b.setPixel(0, j, (255, 0, 0))
-    b.setPixel(side-1, j, (255, 0, 0))
+    b.set_pixel(j, j, (255, 0, 0))
+    b.set_pixel(j, side-j-1, (255, 0, 0))
+    b.set_pixel(j, 0, (255, 0, 0))
+    b.set_pixel(j, side-1, (255, 0, 0))
+    b.set_pixel(0, j, (255, 0, 0))
+    b.set_pixel(side-1, j, (255, 0, 0))
   b.write('file.bmp')
 
 
