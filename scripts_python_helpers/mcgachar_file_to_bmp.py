@@ -8,17 +8,24 @@ MCGACHAR_FILE_SIZE_BYTE = 2688
 BMP_WIDTH_CHARACTER = 8
 
 
+def paint_character(char_pixels, bmp_img, corner_x, corner_y):
+
+    for index, pixel_value in enumerate(char_pixels):
+
+        x = corner_x + index % CHARACTER_WIDTH_PIXEL
+        y = corner_y + index // CHARACTER_WIDTH_PIXEL
+
+        # Cas particulier pour mieux représenter les caractères dans l'image.
+        # En fait dans le fichier MCGACHAR, il n'y a que des valeurs 0, 8 et 255.
+        # Quand c'est 8, on met une couleur un peu plus claire, sinon on ne la voit pas bien.
+        pix = int(pixel_value)
+        if pix == 8:
+            pix = 50
+
+        bmp_img.set_pixel(x, y, [pix] * 3)
+
+
 def main():
-    #side = 520
-    #b = Bitmap(side, side)
-    #for j in range(0, side):
-    #  b.set_pixel(j, j, (255, 0, 0))
-    #  b.set_pixel(j, side-j-1, (255, 0, 0))
-    #  b.set_pixel(j, 0, (255, 0, 0))
-    #  b.set_pixel(j, side-1, (255, 0, 0))
-    #  b.set_pixel(0, j, (255, 0, 0))
-    #  b.set_pixel(side-1, j, (255, 0, 0))
-    #b.write('file.bmp')
 
     if len(sys.argv) > 1:
         mcgachar_filepath = sys.argv[1]
@@ -34,31 +41,41 @@ def main():
         data = data + b"\x00" * MCGACHAR_FILE_SIZE_BYTE
         data = data[:MCGACHAR_FILE_SIZE_BYTE]
 
-    #print(data)
-    bmp_width_pixel = BMP_WIDTH_CHARACTER*(CHARACTER_WIDTH_PIXEL+1) + 1
-    nb_characters = MCGACHAR_FILE_SIZE_BYTE // (CHARACTER_HEIGHT_PIXEL*CHARACTER_WIDTH_PIXEL)
-    bmp_height_character = nb_characters // BMP_WIDTH_CHARACTER + int((nb_characters%BMP_WIDTH_CHARACTER) > 0)
-    bmp_height_pixel = bmp_height_character*(CHARACTER_HEIGHT_PIXEL+1) + 1
+    bmp_width_pixel = 1 + BMP_WIDTH_CHARACTER * (CHARACTER_WIDTH_PIXEL + 1)
+    nb_pixels_one_char = CHARACTER_HEIGHT_PIXEL * CHARACTER_WIDTH_PIXEL
+    nb_characters = MCGACHAR_FILE_SIZE_BYTE // nb_pixels_one_char
+    bmp_height_character = nb_characters // BMP_WIDTH_CHARACTER
+    if nb_characters % BMP_WIDTH_CHARACTER:
+        bmp_height_character += 1
+    bmp_height_pixel = 1 + bmp_height_character * (CHARACTER_HEIGHT_PIXEL + 1)
 
-    print(bmp_width_pixel, bmp_height_pixel)
-
-    #bmp_img = Bitmap(bmp_width_pixel, bmp_height_pixel)
-    # TODO : expliquer que le script de génération des bmp plante et faut utiliser des astuces à la con.
-    # TODO 2 : ou alors, faut juste que ce soit un multiple de 4 ou de 8.
-    # Pas forcément une puissance de 2. À tester.
-    bmp_width_pixel_real = 2**(len(bin(bmp_width_pixel))-2)
+    # La largeur de l'image doit être un multiple de 4, sinon la création de bmp plante.
+    # (Y'a moyen de faire mieux, mais osef).
+    bmp_width_pixel_real = bmp_width_pixel + (4 - bmp_width_pixel % 4) % 4
+    print(
+        "largeur: %s. largeur multiple de 4: %s. hauteur: %s."
+        % (bmp_width_pixel, bmp_width_pixel_real, bmp_height_pixel)
+    )
     bmp_img = Bitmap(bmp_width_pixel_real, bmp_height_pixel)
-    for y_line in range(0, bmp_height_pixel, CHARACTER_HEIGHT_PIXEL+1):
+
+    for y_line in range(0, bmp_height_pixel, CHARACTER_HEIGHT_PIXEL + 1):
         for x in range(0, bmp_width_pixel):
             bmp_img.set_pixel(x, y_line, (100, 100, 100))
-    for x_column in range(0, bmp_width_pixel, CHARACTER_WIDTH_PIXEL+1):
+    for x_column in range(0, bmp_width_pixel, CHARACTER_WIDTH_PIXEL + 1):
         for y in range(0, bmp_height_pixel):
             bmp_img.set_pixel(x_column, y, (100, 100, 100))
 
-    bmp_img.write('mcgachar.bmp')
+    for idx_char in range(nb_characters):
+        corner_x = 1 + (idx_char % BMP_WIDTH_CHARACTER) * (CHARACTER_WIDTH_PIXEL + 1)
+        corner_y = 1 + (idx_char // BMP_WIDTH_CHARACTER) * (CHARACTER_HEIGHT_PIXEL + 1)
+        index_data_start = idx_char * nb_pixels_one_char
+        index_data_end = (idx_char + 1) * nb_pixels_one_char
+        paint_character(
+            data[index_data_start:index_data_end], bmp_img, corner_x, corner_y
+        )
+
+    bmp_img.write("mcgachar.bmp")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-
