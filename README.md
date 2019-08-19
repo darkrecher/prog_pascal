@@ -48,6 +48,6 @@ C'est tout pour l'instant. Le code source de cette animation, ainsi que tout le 
 
 Si vous essayez en ouvrant directement le fichier test\_dosbox.html dans votre navigateur, ça ne fonctionnera pas à cause d'une sécurité concernant les requêtes CORS.
 
-
-
+TODO :
+Expliquer que le fichier EGAVGA.BGI qui a été placé dans artifice.zip a été récupéré à l'arrache depuis ce jeu : [https://www.oldgames.sk/en/game/pisqorx/downloads/](https://www.oldgames.sk/en/game/pisqorx/downloads/). (J'ai pas réussi à le retrouver à un endroit plus simple).
 
