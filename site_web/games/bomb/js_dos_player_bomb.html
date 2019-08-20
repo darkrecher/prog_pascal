@@ -1,0 +1,61 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : jeux en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="../game_summary.html">&lt; Retour aux sommaire des jeux</a>
+  </div>
+
+  <div>
+    <a href="source_code_bomb.html">&gt; Code source (Le lien marche pas car j'ai pas fini ce site)</a>
+  </div>
+
+  <h1 id="app_title">Bomber-Réchèr</h1>
+
+  <p>
+    Pour sélectionner le nombre de joueurs : touche 1, 2, 3 ou 4 du pavé numérique.
+    <br>
+    <br>
+    Config du clavier :
+    <br>
+    Joueur 1 : Z, Q, S, D. &amp; (la touche "1" juste au-dessus du "A").
+    <br>
+    Joueur 2 : 8, 4, 5, 6. Page Down.
+    <br>
+    Joueur 3 : Haut, Bas, Gauche, Droite. BackSpace.
+    <br>
+    Joueur 4 : O, K, L, M. 7 du pavé numérique.
+  </p>
+
+  <div class="buttons">
+    <span class="button-zoom" id="zoom_out">
+      <img src="../../img/zoom_out.png">
+    </span>
+    <span class="button-zoom" id="zoom_in">
+      <img src="../../img/zoom_in.png">
+    </span>
+  </div>
+
+  <canvas id="jsdos"></canvas>
+
+  <script src="../../js/js_dos/js-dos.js"></script>
+  <script src="../../js/pascal_js_dos.js"></script>
+  <script>
+
+    // TODO : onload, mais je sais plus comment appeler le truc.
+    app_filename = "bomb"
+    load_app(app_filename, "../..")
+
+  </script>
+
+</body>
+
+</html>
