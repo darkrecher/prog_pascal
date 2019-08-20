@@ -4,55 +4,7 @@
 
   <meta charset="utf-8">
   <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
-
-  <style>
-    @font-face {
-      font-family: 'IbmVga8';
-      src:  url('../img/ibm_vga8.woff2') format('woff2');
-    }
-    canvas {
-      width: 800px;
-      height: 600px;
-    }
-    body {
-      background-color: #333333;
-      font-family: 'IbmVga8';
-    }
-    a {
-      color: white;
-      text-decoration: none;
-    }
-    a:hover {
-      color: #C0C0C0;
-    }
-    h1 {
-      font-weight: normal;
-      font-size: 3em;
-      color: #FFFF00;
-      padding-top: 0.5em;
-      text-align: center;
-    }
-    .dosbox-container {
-      /* cochonnerie de CSS de daube. */
-      display: block !important;
-      width: 800px;
-      height: 600px;
-      margin: 0 auto;
-    }
-    .buttons {
-      margin: 0 auto 1.2em auto;
-      width: 10em;
-    }
-    .button-zoom {
-      cursor: pointer;
-      padding: 2.1em 0.8em 0.8em 0.8em;
-      background-color: #A0A0A0;
-      margin: 0 0.5em 0 0.5em;
-    }
-    .button-zoom img {
-      height: 2em;
-    }
-  </style>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
 
 </head>
 
@@ -77,42 +29,11 @@
     </span>
   </div>
 
-    <canvas id="jsdos"></canvas>
+  <canvas id="jsdos"></canvas>
 
-  <script src="../js_dos/js-dos.js"></script>
+  <script src="../js/js_dos/js-dos.js"></script>
+  <script src="../js/pascal_js_dos.js"></script>
   <script>
-
-    function get_app_filename() {
-      var url = window.location.href
-      var pos_url_params = url.indexOf("?")
-      if (pos_url_params == -1) {
-        return null
-      }
-      var params = url.slice(pos_url_params+1)
-      params = params.split("&")
-      // On prend que le premier param.
-      // Osef, il est pas censé y'en avoir d'autres.
-      var param = params[0]
-      var name_and_val = param.split("=")
-      if (name_and_val.length != 2) {
-        return null
-      }
-      var name = name_and_val[0]
-      if (name != "appfilename") {
-        return null
-      }
-      return name_and_val[1]
-    }
-
-    function load_app(app_filename) {
-      Dos(document.getElementById("jsdos"), {
-          wdosboxUrl: "../js_dos/wdosbox.js"
-      }).ready((fs, main) => {
-        fs.extract(app_filename + ".zip").then(() => {
-          main(["-c", app_filename + ".exe"])
-        });
-      });
-    }
 
     // TODO : onload, mais je sais plus comment appeler le truc.
 
@@ -124,33 +45,7 @@
       node_title.innerHTML = app_filename
       var node_source_code = document.getElementById("back_to_source_code")
       node_source_code.setAttribute("href", app_filename + "_source_code.html")
-
-
-      load_app(app_filename)
-    }
-
-    glob_width = 800
-
-    function set_jsdos_size(width) {
-
-      str_width = "width: " + glob_width + "px; height: " + parseInt(glob_width*0.75) +"px;"
-
-      var node_dosbox_container = document.getElementsByClassName("dosbox-container")[0]
-      node_dosbox_container.setAttribute("style", str_width)
-      var node_jsdos = document.getElementById("jsdos")
-      node_jsdos.setAttribute("style", str_width)
-    }
-
-    document.getElementById("zoom_in").onclick = function() {
-      glob_width += 100
-      set_jsdos_size(glob_width)
-    }
-
-    document.getElementById("zoom_out").onclick = function() {
-      if (glob_width > 100) {
-        glob_width -= 100
-        set_jsdos_size(glob_width)
-      }
+      load_app(app_filename, "..")
     }
 
   </script>
