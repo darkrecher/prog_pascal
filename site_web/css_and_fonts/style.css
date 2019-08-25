@@ -75,3 +75,9 @@ h1 {
 .code-keyword {
   color:#FFFFFF;
 }
+.code-comment {
+  color:#808080;
+}
+.code-assembler {
+  color:#00FFFF;
+}

@@ -1,0 +1,180 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=artifice">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Artifice - Code source</h1>
+
+  <div>
+    <a href="artifice.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    L'une des premières animations que j'ai codée. Elle utilise un mode graphique standard du Turbo Pascal (640x480, 16 couleurs). Remarquez l'appel à la fonction "InitGraph".
+    <br><br>
+    Remarquez également la tentative d'un goût douteux de faire de l'humour lors de la vérification du paramètre passé en ligne de commande. Si vous ne spécifiez pas un nombre positif, vous vous faite traiter d'imbécile. Ha ha ha !
+    <br><br>
+    Il y a une vague volonté de commenter le code, mais très faible, que l'on ne retrouvera pratiquement pas dans mes autres programmes, sauf pour les librairies communes (et encore).
+    <br><br>
+    Le peu de convention de codage qui pourrait exister en Pascal a été galvaudé, puisque je définis un type de données "Spark" (normalement les types commencent par un "T"), et que les variables ayant ce type se nomment "Artif" (normalement, on met le même nom que le type sans le "T" initial).
+    <br><br>
+    Je vous fais grâce des remarques que l'on pourrait faire sur les noms de variables en franglais "XenPlus", "WhichSpark" et sur les noms de fonctions tels que "Baoum".
+    <br><br>
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">uses</span> Graph,Crt;
+
+<span class="code-keyword">Type</span>
+  Spark=Record
+    Y,XenPlus,YenPlus,X,FinX,FinY:Integer;<span class="code-comment">{FinX et FinY:les coordonnées du pixel}</span>
+  <span class="code-keyword">end</span>;                                 <span class="code-comment">{qui est à l'extremité et qui doit être}</span>
+                                       <span class="code-comment">{effacé}</span>
+
+<span class="code-keyword">Var</span>
+  Artif:<span class="code-keyword">Array</span>[0..5,0..19] <span class="code-keyword">of</span> Spark; <span class="code-comment">{il y a toujours 6 fusées à l'ecran}</span>
+  a,i,Vitesse:Integer;
+  WhichSpark:0..20;
+  Fini:<span class="code-keyword">Array</span>[0..5] <span class="code-keyword">of</span> Integer;
+  Variab:<span class="code-keyword">Array</span>[0..5] <span class="code-keyword">of</span> Integer;<span class="code-comment">{Variab:indique quand la fusee doit exploser, et indique la couleur de l'explosion}</span>
+  Fusee:<span class="code-keyword">Array</span>[0..5] <span class="code-keyword">of</span> 0..3;<span class="code-comment">{0:Creer  une nouvelle fusée,1:la fusée part}</span>
+                            <span class="code-comment">{2:Créer les etincelles,3:les étincelles se dispersent}</span>
+<span class="code-keyword">Procedure</span> Baoum(u,v:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Artif[u,v] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    X:=Artif[u,0].X;
+    Y:=Artif[u,0].Y;
+    FinX:=X;
+    FinY:=Y;
+    Xenplus:=Random(40)-20;
+    YenPlus:=Random(40)-20;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ParamCount&lt;1 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Writeln('Si la vitesse de cette superbe animation ne vous convient pas');
+    WriteLn('Vous pouvez la configurer.');
+    WriteLn('Il suffit d''entrer la valeur de la vitesse en paramètres au moment ');
+    WriteLn('de lancer le programme.');
+    WriteLn('Plus le nombre est grand, plus c''est lent');
+    WriteLn('Mettez plutôt des nombres comme 5 ou 6, mais pas plus');
+    Readkey;
+    <span class="code-keyword">While</span> keypressed <span class="code-keyword">do</span> Readkey;
+    Vitesse:=1;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    Val (ParamStr(1),Vitesse,a);
+    <span class="code-keyword">if</span> a&lt;&gt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Write('Imbécile!!! Vous devez écrire un nombre!!!');
+      Exit;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Vitesse&lt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Write('Imbécile!!! Il faut mettre un nombre positif!!');
+      Exit;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Randomize;
+  a:=9;
+  i:=2;
+  InitGraph(a,i,'c:\bp\bgi');
+  SetFillStyle(0,0);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 5 <span class="code-keyword">do</span> Fusee[i]:=0;
+  i:=0;
+  <span class="code-keyword">Repeat</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 5 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Fusee[i]=0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">With</span> Artif[i,0] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+          Y:=4800;
+          X:=Random(5000)+700;
+          XenPlus:=Random(30)-15;
+          YenPlus:=-20;
+          Fini[i]:=0;
+          FinX:=X;
+          FinY:=Y;
+          Variab[i]:=Random(280)+15;
+          Fusee[i]:=1;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+
+      <span class="code-keyword">if</span> Fusee[i]=1 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">With</span> Artif[i,0] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Fini[i]&gt;10 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            FinX:=FinX+XenPlus;
+            FinY:=FinY+YenPlus+(Fini[i]-11) <span class="code-keyword">div</span> 15;
+            PutPixel(FinX <span class="code-keyword">div</span> 10,FinY <span class="code-keyword">div</span> 10,0);
+          <span class="code-keyword">end</span>;
+          <span class="code-keyword">if</span> Fini[i]&lt;Variab[i]-10 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            X:=X+XenPlus;
+            Y:=Y+YenPlus+Fini[i] <span class="code-keyword">div</span> 15;
+            PutPixel(X <span class="code-keyword">div</span> 10,Y <span class="code-keyword">div</span> 10,15);
+          <span class="code-keyword">end</span>;
+          Fini[i]:=Fini[i]+1;
+          <span class="code-keyword">if</span> Fini[i]=Variab[i] <span class="code-keyword">then</span> Fusee[i]:=2;
+          <span class="code-keyword">if</span> (X&lt;0) or (X&gt;6400) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            Bar(X <span class="code-keyword">div</span> 10,Y <span class="code-keyword">div</span> 10,FinX <span class="code-keyword">div</span> 10,FinY <span class="code-keyword">div</span> 10);
+            Fusee[i]:=0;
+          <span class="code-keyword">end</span>;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+
+      <span class="code-keyword">if</span> Fusee[i]=2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        a:=Random(7)+1;
+        WhichSpark:=0;
+        <span class="code-keyword">Repeat</span>
+          Baoum(i,WhichSpark);
+          WhichSpark:=WhichSpark+1;
+        <span class="code-keyword">Until</span> WhichSpark=20;
+        Fusee[i]:=3;
+        Fini[i]:=0;
+        Variab[i]:=a;
+      <span class="code-keyword">end</span>;
+
+      <span class="code-keyword">if</span> Fusee[i]=3 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        WhichSpark:=0;
+        <span class="code-keyword">Repeat</span>
+          <span class="code-keyword">With</span> Artif[i,WhichSpark] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+            PutPixel(X <span class="code-keyword">div</span> 10,Y <span class="code-keyword">div</span> 10,Variab[i]);
+            <span class="code-keyword">if</span> Fini[i]&lt;89 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+              X:=X+XenPlus;
+              Y:=Y+YenPlus+Fini[i] <span class="code-keyword">div</span> 4;
+            <span class="code-keyword">end</span>;
+            <span class="code-keyword">if</span> Fini[i]&gt;10 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+              FinX:=FinX+XenPlus;
+              FinY:=FinY+YenPlus+(Fini[i]-11) <span class="code-keyword">div</span> 4;
+            <span class="code-keyword">end</span>;
+             PutPixel(X <span class="code-keyword">div</span> 10,Y <span class="code-keyword">div</span> 10,Variab[i]+8);
+             PutPixel(FinX <span class="code-keyword">div</span> 10,FinY <span class="code-keyword">div</span> 10,0);
+          <span class="code-keyword">end</span>;
+          WhichSpark:=WhichSpark+1;
+        <span class="code-keyword">Until</span> WhichSpark=20;
+        Fini[i]:=Fini[i]+1;
+        <span class="code-keyword">if</span> Fini[i]=100 <span class="code-keyword">then</span> Fusee[i]:=0;
+      <span class="code-keyword">end</span>;
+      Delay(Vitesse);
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">Until</span> KeyPressed;
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>
