@@ -1,0 +1,417 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : libraires et utilitaires en Turbo Pascal</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="libs_summary.html">&lt; Retour aux sommaire des librairies</a>
+  </div>
+
+  <h1>MCGAGraf - Code source</h1>
+
+  <div>
+    <a href="mcgagraf.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    TODO : reprendre ce blabla qui vient de l'anim Fusion.
+    TODO : et aussi le blabla que si on fait Echap ça remet pas le mode graphique en "mode 80".
+    TODO : MCGACHAR en téléchargement.
+    <br><br>
+    L'une de mes premières anims utilisant le mode graphique MCGA (320x200, 256 couleurs). C'est ensuite devenu mon mode graphique de prédilection, pour le nombre hallucinatoirement élevé de couleurs qui m'offrait des possibilités de création infinie.
+    <br><br>
+    Ce mode graphique n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo, et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de bidouiller des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
+    <br><br>
+    Par la suite, j'ai créé la librairie de code "MCGAGraf", pour me simplifier la gestion de ce mode graphique, et tout le bazar de mémoire et d'interruptions. On retrouvera dans cette animation les prémices de la librairie, en particulier les fonctions Draw, MegaScreen, Affiche, ainsi que les DefinePal. Les noms des fonctions sont très mal choisis, mais on n'est plus à ça près.
+    <br><br>
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+
+unit MCGAGraf;
+
+interface
+
+<span class="code-keyword">type</span>
+  PScreen=^TScreen;
+  TScreen=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  TCarac=Record
+    Image:<span class="code-keyword">Array</span>[0..7,0..6] <span class="code-keyword">of</span> Byte;
+    SizeX:Byte;
+    Exists:Boolean;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">Var</span>
+  Pal:<span class="code-keyword">Array</span>[0..255,0..2] <span class="code-keyword">of</span> Byte;
+  Video,Buffer:PScreen;
+  ScreenX1,ScreenX2,ScreenY1,ScreenY2:Integer;
+  Carac:<span class="code-keyword">Array</span>[0..255] <span class="code-keyword">of</span> TCarac;
+ <span class="code-comment">{Ce tableau contient les images des caractères, il faut les loader au début
+  du programme par la procédure LoadCarac
+  tout les caractères ont la même hauteur (=8Pixel), mais ils ont
+  chacun une largeur propre:TCarac.SizeX. La largeur maximale est 7 pixels.
+
+  Les images des caractères sont stockées dans le fichier MCGACHAR
+  Dans ce fichier, chaque caractères prend 56 octets (8*7=56)
+  chaque octets peut prendre 3 valeurs:
+  0 : Pixel transparent      FF : Pixel qui a la couleur principale
+  8 : Pixel qui a la couleur secondaire
+
+  la couleur secondaire, c'est la couleur de certains petits pixels,
+  pour faire comme de l'anti-aliasing.
+
+  si t'as rien compris, voir les procédures LoadCarac, OutText, TranspText}</span>
+
+  <span class="code-keyword">Procedure</span> McgaScreen;
+  <span class="code-keyword">Procedure</span> CloseScreen;
+  <span class="code-keyword">Procedure</span> Draw(x1,y1,x2,y2:Integer);
+  <span class="code-keyword">procedure</span> Pixel(X,Y:Word;Color:Byte);
+  <span class="code-keyword">Procedure</span> AfficheAll;
+  <span class="code-keyword">Procedure</span> Affiche;
+  <span class="code-keyword">Procedure</span> DefinePal;
+  <span class="code-keyword">Procedure</span> DefineAColor(Red,Green,Blue,Color:Byte);
+  <span class="code-keyword">Function</span> LoadPalette(FileName:string):Boolean;
+  <span class="code-keyword">Function</span> LoadCarac:Boolean;
+  <span class="code-keyword">Procedure</span> OutText(X,Y:Integer;Text:String);
+  <span class="code-keyword">Procedure</span> LineHoriz(x1,x2,y:Integer;Color:Byte);
+  <span class="code-keyword">Procedure</span> LineVertic(x,y1,y2:Integer;Color:Byte);
+  <span class="code-keyword">Procedure</span> Square(x1,y1,x2,y2:Integer;Color:Byte);
+  <span class="code-keyword">Procedure</span> FilledSquare(x1,y1,x2,y2:Integer;Color:Byte);
+  <span class="code-keyword">Procedure</span> ClearScreen(Color:Byte);
+  <span class="code-keyword">Procedure</span> Degrade(Color1,Red1,Green1,Blue1,Color2,Red2,Green2,Blue2:Byte);
+  <span class="code-keyword">Procedure</span> TranspText(X,Y:Integer;Text:string;Color1,Color2:Byte;Adouci:Boolean);
+  <span class="code-keyword">Function</span> TextLength(Text:string):Word;
+
+implementation
+
+<span class="code-keyword">uses</span> Dos,DosFile;
+
+<span class="code-keyword">procedure</span> Pixel(X,Y:Word;Color:Byte);assembler;
+<span class="code-keyword">asm</span>
+  cmp x,320
+  jnb @@1
+  cmp y,200
+  jnb @@1
+  les bx,Buffer
+  add bh,Byte(y)
+  mov dx,y
+  <span class="code-keyword">shl</span> dx,6
+  add bx,dx
+  add bx,x
+  mov cl,color
+  mov es:[bx],cl
+@@1:
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> McgaScreen;
+<span class="code-keyword">var</span> x,y:integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    Mov AH,$0000;
+    Mov AL,$0013;
+    Int $10;
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:$0000]);
+  New(Buffer);
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Video^[y,x]:=0;
+    Buffer^[y,x]:=0;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> CloseScreen;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    Mov AH,$0000;
+    Mov AL,$003;
+    Int $10;
+  <span class="code-keyword">end</span>;
+  Dispose(Buffer);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Affiche;
+<span class="code-keyword">var</span> i:Word;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=ScreenY1 <span class="code-keyword">to</span> ScreenY2 <span class="code-keyword">do</span> Move(Buffer^[i,ScreenX1],Video^[i,ScreenX1],ScreenX2-ScreenX1+1);
+  ScreenX1:=319;
+  ScreenX2:=0;
+  ScreenY1:=199;
+  ScreenY2:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> AfficheAll;
+<span class="code-keyword">var</span> i:Word;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> Move(Buffer^[i,0],Video^[i,0],320);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Draw(x1,y1,x2,y2:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ScreenX1&gt;x1 <span class="code-keyword">then</span> ScreenX1:=x1;
+  <span class="code-keyword">if</span> ScreenX2&lt;x2 <span class="code-keyword">then</span> ScreenX2:=x2;
+  <span class="code-keyword">if</span> ScreenY1&gt;y1 <span class="code-keyword">then</span> ScreenY1:=y1;
+  <span class="code-keyword">if</span> ScreenY2&lt;y2 <span class="code-keyword">then</span> ScreenY2:=y2;
+  <span class="code-keyword">if</span> ScreenX1&lt;0 <span class="code-keyword">then</span> ScreenX1:=0;
+  <span class="code-keyword">if</span> ScreenX2&gt;319 <span class="code-keyword">then</span> ScreenX2:=319;
+  <span class="code-keyword">if</span> ScreenY1&lt;0 <span class="code-keyword">then</span> ScreenY1:=0;
+  <span class="code-keyword">if</span> ScreenY2&gt;199 <span class="code-keyword">then</span> ScreenY2:=199;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefinePal;
+<span class="code-keyword">var</span> Reg:Registers;
+<span class="code-keyword">begin</span>
+  Reg.AH:=$0010;
+  Reg.AL:=$0012;
+  Reg.BX:=$0000;
+  Reg.CX:=$0100;
+  Reg.ES:=Seg(Pal);
+  Reg.DX:=Ofs(Pal);
+  Intr($10,Reg);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefineAColor(Red,Green,Blue,Color:Byte);assembler;
+<span class="code-keyword">asm</span>
+  mov ah,$10
+  mov al,$10
+  mov bl,Color
+  xor bh,bh
+  mov ch,Green
+  mov cl,Blue
+  mov dh,Red
+  int $10
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> ClearScreen(Color:Byte);
+<span class="code-keyword">begin</span>
+  FillChar(Buffer^[0,0],64000,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> LoadPalette(FileName:string):Boolean;
+<span class="code-keyword">var</span> H:Handle;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> FOpen(H,FileName) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    FRead(H,Pal,768);
+    FClose(H);
+    DefinePal;
+    LoadPalette:=True;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> LoadPalette:=False;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{Procédure pour charger ma super police de caractères en mémoire}</span>
+
+<span class="code-keyword">Function</span> LoadCarac:Boolean;
+<span class="code-keyword">var</span> H:Handle;i:Byte;
+
+  <span class="code-keyword">Procedure</span> LoadOneCarac(AsciiValue:Byte);
+  <span class="code-keyword">var</span> Stop:Boolean;j:Byte;Sum:Integer;
+  <span class="code-keyword">begin</span>
+    <span class="code-keyword">With</span> Carac[AsciiValue] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      FRead(H,Image[0,0],56);
+      SizeX:=7;
+      Exists:=True;
+      Stop:=False;
+      <span class="code-keyword">Repeat</span>
+        Sum:=0;
+        <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 7 <span class="code-keyword">do</span> Inc(Sum,Image[j,SizeX-1]);
+        <span class="code-keyword">if</span> Sum=0 <span class="code-keyword">then</span> Dec(SizeX) <span class="code-keyword">else</span> Stop:=True;
+      <span class="code-keyword">Until</span> (SizeX=0) or Stop;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+
+  <span class="code-keyword">Procedure</span> EmptyCarac(AsciiValue:Byte);
+  <span class="code-keyword">begin</span>
+    <span class="code-keyword">With</span> Carac[AsciiValue] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      FillChar(Image[0,0],56,0);
+      SizeX:=7;
+      Exists:=True;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 255 <span class="code-keyword">do</span> Carac[i].Exists:=False;
+  <span class="code-keyword">if</span> FOpen(H,'mcgachar') <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 25 <span class="code-keyword">do</span> LoadOneCarac(Ord('A')+i);
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 9 <span class="code-keyword">do</span> LoadOneCarac(Ord('0')+i);
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> LoadOneCarac(24+i);
+    LoadOneCarac(Ord(''''));
+    LoadOneCarac(Ord('?'));
+    LoadOneCarac(Ord(','));
+    LoadOneCarac(Ord(';'));
+    LoadOneCarac(Ord('.'));
+    LoadOneCarac(Ord(':'));
+    LoadOneCarac(Ord('!'));
+    LoadOneCarac(Ord('='));
+    <span class="code-comment">{Si tu veux rajouter des caractères dans la police,
+    modifie le fichier MCGACHAR
+    et modifie cette procédure, rajoute des LoadOneCarac ici
+    ATTENTION!! L'ordre dans lequel tu charge les caractères est important
+    dans le fichier MCGACHAR, les caractères sont stockés
+    dans un certain ordre, il faut les charger dans le même ordre.
+    Regarde plus haut pour savoir comment est foutu le fichier MCGACHAR
+    regarde un peu plus bas si tu ne comprends toujours rien}</span>
+    EmptyCarac(32);
+    EmptyCarac(255);
+    LoadCarac:=True;
+    FClose(H);
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> LoadCarac:=False;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{Procédure pour afficher bêtement le texte commme ça, avec un rectangle noir
+autour du texte, le texte est affiché avec la couleur 255 comme couleur principale
+et la couleur 8 comme couleur secondaire.
+Donc si ta palette de couleur est pas adaptée, cette procédure sert à rien
+Cette procédure est assez rapide}</span>
+
+<span class="code-keyword">Procedure</span> OutText(X,Y:Integer;Text:string);
+<span class="code-keyword">var</span> i,j:Byte;SkipNext:Boolean;
+<span class="code-keyword">begin</span>
+  SkipNext:=False;
+  <span class="code-keyword">if</span> Text&lt;&gt;'' <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> Length(Text) <span class="code-keyword">do</span> <span class="code-keyword">if</span> <span class="code-keyword">not</span> SkipNext <span class="code-keyword">then</span> <span class="code-keyword">With</span> Carac[Ord(Text[i])] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> Exists <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 7 <span class="code-keyword">do</span> Move(Image[j,0],Buffer^[Y+j,X],SizeX);
+      Inc(X,SizeX);
+      LineVertic(X,Y,Y+7,0);
+      Inc(X);
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Text[i]=#0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      j:=Ord(Text[i+1]);
+      FilledSquare(X,Y,X+j,Y+7,0);
+      Inc(X,j);
+      SkipNext:=True;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> SkipNext:=False;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{Procédure pour afficher que le texte, sans gros rectangle pas beau.
+les paramètres Color1 et Color2 sont les numéros des couleurs principales
+et secondaires.
+le paramètres Adouci est un Boolean, qui indique si tu veux afficher le texte
+avec ou sans anti-aliasing.
+Donc, si tu mets "False" dans le paramètre Adouci, tu ne mets pas d'anti-aliasing
+et tu peux mettre n'importe quoi comme valeur dans le paramètre Color2}</span>
+
+<span class="code-keyword">Procedure</span> TranspText(X,Y:Integer;Text:string;Color1,Color2:Byte;Adouci:Boolean);
+<span class="code-keyword">var</span> i,j,k:Byte;SkipNext:Boolean;
+<span class="code-keyword">begin</span>
+  SkipNext:=False;
+  <span class="code-keyword">if</span> Text&lt;&gt;'' <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> Length(Text) <span class="code-keyword">do</span> <span class="code-keyword">if</span> <span class="code-keyword">not</span> SkipNext <span class="code-keyword">then</span> <span class="code-keyword">With</span> Carac[Ord(Text[i])] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> Exists <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 7 <span class="code-keyword">do</span> <span class="code-keyword">for</span> k:=0 <span class="code-keyword">to</span> SizeX-1 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Image[j,k]=255 <span class="code-keyword">then</span> Pixel(X+k,Y+j,Color1)
+      <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Image[j,k]=8) <span class="code-keyword">and</span> (Adouci) <span class="code-keyword">then</span> Pixel(X+k,Y+j,Color2);
+      Inc(X,SizeX+1);
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Text[i]=#0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(X,Ord(Text[i+1]));
+      SkipNext:=True;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> SkipNext:=False;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{Pour les procédures OutText et TranspText :
+ - On ne peut écrire que des  majuscules.
+
+ - Tu peux mettre un espace de largeur n au milieu du texte en écrivant #0+#n
+Exemple : 'SALUT LES'+#0+#25+'AMIS!'   tu auras dans ce cas un espace de
+25 pixels entre tes deux morceaux de texte}</span>
+
+
+<span class="code-comment">{Fonction qui donne en pixel la largeur d'un texte, ça peut servir
+tu peux mettre comme paramètre une chaîne de caractères qui a des #0+#n
+la fonction en tient compte}</span>
+
+<span class="code-keyword">Function</span> TextLength(Text:string):Word;
+<span class="code-keyword">var</span> L:Word;i:Byte;SkipNext:Boolean;
+<span class="code-keyword">begin</span>
+  L:=0;
+  SkipNext:=False;
+  <span class="code-keyword">if</span> Text&lt;&gt;'' <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> Length(Text) <span class="code-keyword">do</span> <span class="code-keyword">if</span> <span class="code-keyword">not</span>(SkipNext) <span class="code-keyword">then</span>
+  <span class="code-keyword">if</span> Text[i]&lt;&gt;#0 <span class="code-keyword">then</span> Inc(L,Carac[Ord(Text[i])].SizeX+1) <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    SkipNext:=True;
+    Inc(L,Ord(Text[i+1]));
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> SkipNext:=False;
+  TextLength:=L-1;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> LineHoriz(x1,x2,y:Integer;Color:Byte);
+<span class="code-keyword">var</span> x:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> x1&gt;x2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span> x1:=x; x1:=x2; x2:=x; <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> x1&lt;0 <span class="code-keyword">then</span> x1:=0;
+  <span class="code-keyword">if</span> x2&gt;319 <span class="code-keyword">then</span> x2:=319;
+  <span class="code-keyword">if</span> (y&gt;=0) <span class="code-keyword">and</span> (y&lt;=199) <span class="code-keyword">and</span> (x1&lt;319) <span class="code-keyword">and</span> (x2&gt;0) <span class="code-keyword">then</span> FillChar(Buffer^[y,x1],x2-x1+1,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> LineVertic(x,y1,y2:Integer;Color:Byte);
+<span class="code-keyword">var</span> i,y:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> y1&gt;y2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span> y1:=y; y1:=y2; y2:=y; <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> y1&lt;0 <span class="code-keyword">then</span> y1:=0;
+  <span class="code-keyword">if</span> y2&gt;199 <span class="code-keyword">then</span> y2:=199;
+  <span class="code-keyword">if</span> (x&gt;=0) <span class="code-keyword">and</span> (x&lt;=319) <span class="code-keyword">and</span> (y1&lt;199) <span class="code-keyword">and</span> (y2&gt;0) <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=y1 <span class="code-keyword">to</span> y2 <span class="code-keyword">do</span> Pixel(x,i,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Square(x1,y1,x2,y2:Integer;Color:Byte);
+<span class="code-keyword">begin</span>
+  LineVertic(x1,y1,y2,Color);
+  LineVertic(x2,y1,y2,Color);
+  LineHoriz(x1,x2,y1,Color);
+  LineHoriz(x1,x2,y2,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> FilledSquare(x1,y1,x2,y2:Integer;Color:Byte);
+<span class="code-keyword">var</span> i,Zarba:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> x1&lt;0 <span class="code-keyword">then</span> x1:=0;
+  <span class="code-keyword">if</span> x2&gt;319 <span class="code-keyword">then</span> x2:=319;
+  <span class="code-keyword">if</span> y1&lt;0 <span class="code-keyword">then</span> y1:=0;
+  <span class="code-keyword">if</span> y2&gt;199 <span class="code-keyword">then</span> y2:=199;
+  <span class="code-keyword">if</span> y1&gt;y2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span> y1:=Zarba; y1:=y2; y2:=Zarba; <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> x1&gt;x2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span> x1:=Zarba; x1:=x2; x2:=Zarba; <span class="code-keyword">end</span>;
+  Zarba:=x2-x1+1;
+  <span class="code-keyword">if</span> (x1&lt;319) <span class="code-keyword">and</span> (x2&gt;0) <span class="code-keyword">and</span> (y1&lt;199) <span class="code-keyword">and</span> (y2&gt;0) <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=y1 <span class="code-keyword">to</span> y2 <span class="code-keyword">do</span> FillChar(Buffer^[i,x1],Zarba,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{Procédure pour faire des bô dégradés dans la palette de couleur
+On doit indiquer les numéros de couleurs de fin et de départ
+, les valeurs rouge-vert-bleu que doit prendre la couleur de départ
+et les valeurs RVB que doit prendre la couleur de fin.
+La procédure fait un bô dégradé entre ces deux couleurs}</span>
+
+<span class="code-keyword">Procedure</span> Degrade(Color1,Red1,Green1,Blue1,Color2,Red2,Green2,Blue2:Byte);
+<span class="code-keyword">var</span> Red,Green,Blue,DepRed,DepGreen,DepBlue:Integer;i:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Color1&lt;Color2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Red:=Red1 <span class="code-keyword">shl</span> 5;
+    Green:=Green1 <span class="code-keyword">shl</span> 5;
+    Blue:=Blue1 <span class="code-keyword">shl</span> 5;
+    DepRed:=((Red2-Red1+Ord(Red1&lt;Red2)-Ord(Red1&gt;Red2)) <span class="code-keyword">shl</span> 5) <span class="code-keyword">div</span> (Color2-Color1+1);
+    DepGreen:=((Green2-Green1+Ord(Green1&lt;Green2)-Ord(Green1&gt;Green2)) <span class="code-keyword">shl</span> 5) <span class="code-keyword">div</span> (Color2-Color1+1);
+    DepBlue:=((Blue2-Blue1+Ord(Blue1&lt;Blue2)-Ord(Blue1&gt;Blue2)) <span class="code-keyword">shl</span> 5) <span class="code-keyword">div</span> (Color2-Color1+1);
+    <span class="code-keyword">for</span> i:=Color1 <span class="code-keyword">to</span> Color2 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[i,0]:=Red <span class="code-keyword">shr</span> 5;
+      Pal[i,1]:=Green <span class="code-keyword">shr</span> 5;
+      Pal[i,2]:=Blue <span class="code-keyword">shr</span> 5;
+      Inc(Red,DepRed);
+      Inc(Green,DepGreen);
+      Inc(Blue,DepBlue);
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">end</span>.
+
+</pre>
+
+  </div>
+
+</body>
+
+</html>

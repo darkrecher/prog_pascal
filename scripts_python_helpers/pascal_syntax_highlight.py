@@ -10,7 +10,7 @@ par leurs HTML entities équivalentes.
 Certes, ça n'a rien à voir avec de la coloration syntaxique, mais j'ai besoin que
 ça fasse ça.
 
-TODO : Pour l'instant, ça ne gère les parties de code en assembleur (à mettre en cyan clair).
+TODO : Pour l'instant, ça ne gère pas les parties de code en assembleur (à mettre en cyan clair).
 """
 
 import re
