@@ -21,15 +21,27 @@
   </div>
 
   <p>
-    TODO : reprendre ce blabla qui vient de l'anim Fusion.
     TODO : et aussi le blabla que si on fait Echap ça remet pas le mode graphique en "mode 80".
     TODO : MCGACHAR en téléchargement.
     <br><br>
-    L'une de mes premières anims utilisant le mode graphique MCGA (320x200, 256 couleurs). C'est ensuite devenu mon mode graphique de prédilection, pour le nombre hallucinatoirement élevé de couleurs qui m'offrait des possibilités de création infinie.
+    La librairie que j'ai le plus utilisée pour mes jeux et mes animations. Elle permet d'activer le mode graphique MCGA (320x200, 256 couleurs), qui est devenu mon mode graphique de prédilection. Le nombre hallucinatoirement élevé de couleurs m'offrait des possibilités de création infinie.
     <br><br>
-    Ce mode graphique n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo, et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de bidouiller des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
+    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "ce pixel sera en rouge=130, vert=250, bleu=60". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", et vous avez préalablement défini la couleur numéro 42 à rouge=130, vert=250, bleu=60. Vous l'aurez compris, la palette de couleur n'en comporte que 256.
     <br><br>
-    Par la suite, j'ai créé la librairie de code "MCGAGraf", pour me simplifier la gestion de ce mode graphique, et tout le bazar de mémoire et d'interruptions. On retrouvera dans cette animation les prémices de la librairie, en particulier les fonctions Draw, MegaScreen, Affiche, ainsi que les DefinePal. Les noms des fonctions sont très mal choisis, mais on n'est plus à ça près.
+    C'était très limité, mais le fait d'avoir une palette permettait de créer des effets intéressants. Vous pouviez changer très rapidement toutes les couleurs de l'écran en modifiant uniquement la palette. Par exemple, un dessin rouge et vert devenait d'un seul coup un dessin bleu et jaune. Mais ça restait le même dessin.
+    <br><br>
+    Les écrans d'ordinateur de l'époque était tous en 4/3, or 320x200 pixels ce n'est pas une proportion de 4/3. Les pixels n'étaient pas carrés. Si vous dessiniez à l'écran une forme de 20 pixels de haut et 20 pixels de large, ça faisait un rectangle. C'était pas très pratique, mais on faisait avec.
+    <br><br>
+    Il n'y avait besoin que d'un seul octet pour définir un pixel d'écran. L'écran en entier était donc défini par un buffer mémoire de 320*200 = 64 000 octets. C'était juste en dessous de la limite des tailles de buffer du Pascal à l'époque : 65 536 octets. Avec du 320*240, on aurait eu des pixels carrés, mais il aurait fallu 76 800 octets. Cette limitation à 65 536 provenait de la gestion de la mémoire, une bidouille avec le registre de segment et le registre d'offset. Les registres ont une taille de seulement 2 octets, ce qui ne permet de compter que de 0 jusqu'à 65 535.
+    <br><br>
+    Le mode graphique MCGA n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo, et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de biduler des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
+    <br><br>
+    Je n'avais pas créé cette librairie dès le départ, vous verrez donc beaucoup d'animations et de jeux en MCGA, dont le code source ne commence pas par la ligne d'importation "uses MCGAGraf;". Par contre vous y trouverez un petit ensemble de fonctions correspondant plus ou moins à celle de cette librairie : Draw, MegaScreen, Affiche, DefinePal... Les noms ne sont pas toujours bien choisis, et sont écrits en franglais, mais on n'est plus à ça près.
+    <br><br>
+    TODO :
+    Il existait deux versions, avec et sans le texte.
+    blabla tutoiement dans les commentaires.
+    blabla le bout d'assembleur pour checker les limites d'écran.
     <br><br>
   </p>
 
