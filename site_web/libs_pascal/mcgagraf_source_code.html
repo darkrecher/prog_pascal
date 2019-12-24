@@ -18,30 +18,34 @@
 
   <div>
     <a href="mcgagraf.pas">&gt; Télécharger le code source (encodage CP437)</a>
+    <br>
+    <a href="MCGACHAR">&gt; Télécharger MCGACHAR : le fichier de police de caractères</a>
   </div>
 
   <p>
-    TODO : et aussi le blabla que si on fait Echap ça remet pas le mode graphique en "mode 80".
-    TODO : MCGACHAR en téléchargement.
+    Il s'agit de la librairie que j'ai le plus utilisée pour mes jeux et mes animations. Elle permet d'activer le mode graphique MCGA (320x200, 256 couleurs), qui est devenu mon mode graphique de prédilection. Le nombre hallucinatoirement élevé de couleurs m'offrait des possibilités de création infinie.
     <br><br>
-    La librairie que j'ai le plus utilisée pour mes jeux et mes animations. Elle permet d'activer le mode graphique MCGA (320x200, 256 couleurs), qui est devenu mon mode graphique de prédilection. Le nombre hallucinatoirement élevé de couleurs m'offrait des possibilités de création infinie.
+    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "sa couleur sera en rouge=130, vert=250, bleu=60". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", sachant que vous avez préalablement défini la couleur numéro 42 à rouge=130, vert=250, bleu=60. Vous l'aurez compris, la palette n'a que 256 couleurs.
     <br><br>
-    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "ce pixel sera en rouge=130, vert=250, bleu=60". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", et vous avez préalablement défini la couleur numéro 42 à rouge=130, vert=250, bleu=60. Vous l'aurez compris, la palette de couleur n'en comporte que 256.
+    C'était très limité, mais ce principe de palette permettait de créer des effets intéressants. Vous pouviez changer très rapidement toutes les couleurs de l'écran en modifiant uniquement la palette. Par exemple, un dessin rouge et vert devenait d'un seul coup bleu et jaune.
     <br><br>
-    C'était très limité, mais le fait d'avoir une palette permettait de créer des effets intéressants. Vous pouviez changer très rapidement toutes les couleurs de l'écran en modifiant uniquement la palette. Par exemple, un dessin rouge et vert devenait d'un seul coup un dessin bleu et jaune. Mais ça restait le même dessin.
+    Les écrans d'ordinateur de l'époque étaient tous en 4/3, or cette proportion ne correspond pas aux 320x200 pixels. Les pixels n'étaient pas carrés. Si vous dessiniez à l'écran une forme de 20 pixels de haut et 20 pixels de large, ça faisait un rectangle. C'était pas très pratique, mais on faisait avec.
     <br><br>
-    Les écrans d'ordinateur de l'époque était tous en 4/3, or 320x200 pixels ce n'est pas une proportion de 4/3. Les pixels n'étaient pas carrés. Si vous dessiniez à l'écran une forme de 20 pixels de haut et 20 pixels de large, ça faisait un rectangle. C'était pas très pratique, mais on faisait avec.
+    Il n'y avait besoin que d'un seul octet par pixel. L'écran entier était donc défini par un buffer mémoire de 320*200 = 64 000 octets, soit un peu en dessous de la limite des tailles de buffer mémoire du Pascal : 65 536 octets. Avec du 320*240, on aurait eu des pixels carrés, mais il aurait fallu 76 800 octets. Cette limitation à 65 536 provenait de la gestion de la mémoire, une bidouille avec le registre de segment et le registre d'offset. Les registres ont une taille de seulement 2 octets, ce qui ne permet de ne compter que de 0 à 65 535.
     <br><br>
-    Il n'y avait besoin que d'un seul octet pour définir un pixel d'écran. L'écran en entier était donc défini par un buffer mémoire de 320*200 = 64 000 octets. C'était juste en dessous de la limite des tailles de buffer du Pascal à l'époque : 65 536 octets. Avec du 320*240, on aurait eu des pixels carrés, mais il aurait fallu 76 800 octets. Cette limitation à 65 536 provenait de la gestion de la mémoire, une bidouille avec le registre de segment et le registre d'offset. Les registres ont une taille de seulement 2 octets, ce qui ne permet de compter que de 0 jusqu'à 65 535.
+    Le mode graphique MCGA n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de biduler des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
     <br><br>
-    Le mode graphique MCGA n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo, et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de biduler des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
+    Je n'avais pas créé cette librairie dès le départ, vous verrez donc dans ce site beaucoup d'animations et de jeux qui ne l'importent pas (pas d'instruction "uses MCGAGraf;"), mais qui sont en MCGA quand même. Ces jeux et ces anims comportent un ensemble de fonctions correspondant plus ou moins à celle de la librairie : Draw, MegaScreen, Affiche, DefinePal... Les noms ne sont pas toujours bien choisis et sont écrits en franglais, on n'est plus à ça près.
     <br><br>
-    Je n'avais pas créé cette librairie dès le départ, vous verrez donc beaucoup d'animations et de jeux en MCGA, dont le code source ne commence pas par la ligne d'importation "uses MCGAGraf;". Par contre vous y trouverez un petit ensemble de fonctions correspondant plus ou moins à celle de cette librairie : Draw, MegaScreen, Affiche, DefinePal... Les noms ne sont pas toujours bien choisis, et sont écrits en franglais, mais on n'est plus à ça près.
+    Parfois, j'oubliais de remettre le mode graphique normal en fin de programme (fonction CloseScreen). On revenait sur la console de commande MS-DOS, mais tout était écrit en plus gros et plus moche. Il fallait alors taper la commande "mode 80" si je me souviens bien.
     <br><br>
-    TODO :
-    Il existait deux versions, avec et sans le texte.
-    blabla tutoiement dans les commentaires.
-    blabla le bout d'assembleur pour checker les limites d'écran.
+    Le buffer mémoire étant continu, si on définit un pixel trop à droite, par exemple en X=345, Y=100, ça se reporte sur la ligne d'en dessous, on définit alors le pixel X=25, Y=101. Si on va vraiment trop en bas : X=310, Y=201, ça plante, car on écrit à un endroit non autorisé de la mémoire. Je ne voulais pas m'embêter à gérer ça dans mes anims, alors j'ai ajouté un contrôle des coordonnées. Mais j'avais peur qu'une vérification pour chaque pixel rende l'exécution trop lente. Je l'ai donc codé en assembleur. Et pour optimiser encore plus, je n'ai pas calculé l'emplacement mémoire via une multiplication : offset_mem = Y*200 + X. Par contre je ne sais plus trop quel astuce j'ai utilisée. Je vous laisse consulter le corps de la fonction "Pixel".
+    <br><br>
+    Il existait deux versions de cette librairie MCGAGraf, je ne saurais pas retrouver la première. La version la plus récente comporte des fonctions d'affichage de texte : LoadCarac, OutText, TranspText, TextLength. Ces fonctions nécessitent la présence du fichier "MCGACHAR", contenant la police de caractères. La dernière version de la lib et ce fichier de police sont téléchargeable en haut de cette page web.
+    <br><br>
+    C'est très prétentieux d'appeler ça une "police de caractères". Il n'y a que les majuscules, les nombres et quelques signes de ponctuation. Et ce ne sont que des images fixes. Mais c'était quand même la classe.
+    <br><br>
+    J'avais même follement imaginé que les camarades de lycée qui codaient comme moi allaient utiliser cette librairie. J'ai donc ajouté quelques commentaires pour la partie affichage de texte. Je m'excuse auprès de vous pour leur formulation approximative et pour le tutoiement. J'étais jeune et naïf.
     <br><br>
   </p>
 
@@ -108,28 +112,28 @@ implementation
 
 <span class="code-keyword">procedure</span> Pixel(X,Y:Word;Color:Byte);assembler;
 <span class="code-keyword">asm</span>
-  cmp x,320
-  jnb @@1
-  cmp y,200
-  jnb @@1
-  les bx,Buffer
-  add bh,Byte(y)
-  mov dx,y
-  <span class="code-keyword">shl</span> dx,6
-  add bx,dx
-  add bx,x
-  mov cl,color
-  mov es:[bx],cl
-@@1:
+<span class="code-assembler">    cmp x,320
+    jnb @@1
+    cmp y,200
+    jnb @@1
+    les bx,Buffer
+    add bh,Byte(y)
+    mov dx,y
+    shl dx,6
+    add bx,dx
+    add bx,x
+    mov cl,color
+    mov es:[bx],cl
+  @@1:</span>
 <span class="code-keyword">end</span>;
 
 <span class="code-keyword">Procedure</span> McgaScreen;
 <span class="code-keyword">var</span> x,y:integer;
 <span class="code-keyword">begin</span>
   <span class="code-keyword">Asm</span>
-    Mov AH,$0000;
+  <span class="code-assembler">  Mov AH,$0000;
     Mov AL,$0013;
-    Int $10;
+    Int $10;</span>
   <span class="code-keyword">end</span>;
   Video:=Addr(Mem[$A000:$0000]);
   New(Buffer);
@@ -142,9 +146,9 @@ implementation
 <span class="code-keyword">Procedure</span> CloseScreen;
 <span class="code-keyword">begin</span>
   <span class="code-keyword">Asm</span>
-    Mov AH,$0000;
+  <span class="code-assembler">  Mov AH,$0000;
     Mov AL,$003;
-    Int $10;
+    Int $10;</span>
   <span class="code-keyword">end</span>;
   Dispose(Buffer);
 <span class="code-keyword">end</span>;
@@ -191,14 +195,14 @@ implementation
 
 <span class="code-keyword">Procedure</span> DefineAColor(Red,Green,Blue,Color:Byte);assembler;
 <span class="code-keyword">asm</span>
-  mov ah,$10
+<span class="code-assembler">  mov ah,$10
   mov al,$10
   mov bl,Color
   xor bh,bh
   mov ch,Green
   mov cl,Blue
   mov dh,Red
-  int $10
+  int $10</span>
 <span class="code-keyword">end</span>;
 
 <span class="code-keyword">Procedure</span> ClearScreen(Color:Byte);
