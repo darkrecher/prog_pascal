@@ -13,6 +13,7 @@
   <div>
     <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
   </div>
+  <br>
 
   <div>
     <a href="js_dos_player_anim.html?appfilename=artifice">&gt; Voir cette anim</a>
@@ -27,11 +28,17 @@
   <p>
     L'une des premières animations que j'ai codée. Elle utilise un mode graphique standard du Turbo Pascal (640x480, 16 couleurs). Remarquez l'appel à la fonction "InitGraph".
     <br><br>
-    Remarquez également la tentative d'un goût douteux de faire de l'humour lors de la vérification du paramètre passé en ligne de commande. Si vous ne spécifiez pas un nombre positif, vous vous faite traiter d'imbécile. Ha ha ha !
+    Les exécutables utilisant ce mode graphique nécessitent un fichier EGAVGA.BGI, fourni avec le Pascal. Je ne sais pas exactement ce qu'il contient. Il est intégré dans le .zip lu par dosbox-js.
+    <br><br>
+    J'ai eu un peu de mal à retrouver ce fichier, car bien entendu, je ne l'avais pas inclus dans mes sauvegardes. Je l'ai récupéré, complètement à l'arrache, grâce au jeu
+    <a href="https://www.oldgames.sk/en/game/pisqorx/downloads/">"Pisqorx"</a>.
+    Un grand merci au créateur de ce jeu, et à sa présence d'esprit d'avoir indiqué "egavga.bgi" dans sa description, ce qui a permis aux moteurs de recherche de me mener à lui.
+    <br><br>
+    Remarquez également, dans le code, la tentative au goût douteux de faire de l'humour lors de la vérification du paramètre passé en ligne de commande. Si vous ne spécifiez pas un nombre positif, vous vous faite traiter d'imbécile. Ha ha ha !
     <br><br>
     Il y a une vague volonté de commenter le code, mais très faible, que l'on ne retrouvera pratiquement pas dans mes autres programmes, sauf pour les librairies communes (et encore).
     <br><br>
-    Le peu de convention de codage qui pourrait exister en Pascal a été galvaudé, puisque je définis un type de données "Spark" (normalement les types commencent par un "T"), et que les variables ayant ce type se nomment "Artif" (normalement, on met le même nom que le type sans le "T" initial).
+    Le peu de convention de codage qui pourrait exister en Pascal a été galvaudé, puisque je définis un type de données "Spark" et que les variables ayant ce type se nomment "Artif". Normalement les types commencent par un "T", et les variables de ce type ont le même nom, sans le "T" initial.
     <br><br>
     Je vous fais grâce des remarques que l'on pourrait faire sur les noms de variables en franglais "XenPlus", "WhichSpark" et sur les noms de fonctions tels que "Baoum".
     <br><br>

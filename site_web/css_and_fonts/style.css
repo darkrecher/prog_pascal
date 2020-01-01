@@ -14,11 +14,11 @@ body {
 }
 
 a {
-  color: white;
+  color: #8080FF;
   text-decoration: none;
 }
 a:hover {
-  color: #B0B0B0;
+  color: #B0B0FF;
 }
 h1 {
   font-weight: normal;

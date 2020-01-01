@@ -13,6 +13,7 @@
   <div>
     <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
   </div>
+  <br>
 
   <div>
     <a href="js_dos_player_anim.html?appfilename=fusion">&gt; Voir cette anim</a>
@@ -22,20 +23,21 @@
 
   <div>
     <a href="fusion.pas">&gt; Télécharger le code source (encodage CP437)</a>
+    <br>
+    <a href="fusion.spr">&gt; Télécharger le fichier de données fusion.spr</a>
   </div>
 
   <p>
-    TODO : reprendre tout ce blabla qui parle de deux trucs en même temps et c'est nimp.
     <br><br>
-    L'une de mes premières anims utilisant le mode graphique MCGA (320x200, 256 couleurs). C'est ensuite devenu mon mode graphique de prédilection, pour le nombre hallucinatoirement élevé de couleurs qui m'offrait des possibilités de création infinie.
+    L'une de mes premières anims utilisant le mode graphique MCGA (320x200, 256 couleurs). Elle se nomme "Fusion" car il s'agit d'un rassemblement de plusieurs anims que j'avais créées séparément : la sinusoïde, le cyclage de couleurs, l'espèce de balle qui se promène de haut en bas en laissant une trainée sur tout l'écran. C'est assez gerbatif, mais moi je trouvais ça hyper cool.
     <br><br>
-    Ce mode graphique n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo, et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de bidouiller des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
+    Un petit fichier de données est nécessaire : "fusion.spr". (Il est déjà intégré dans le .zip lu par dosbox-js). C'est un fichier de 81 octets, définissant le dessin de la baballe. En version image, ça donnerait un carré de 9 pixels comme ça :
     <br><br>
-    Par la suite, j'ai créé la librairie de code "MCGAGraf", pour me simplifier la gestion de ce mode graphique, et tout le bazar de mémoire et d'interruptions. On retrouvera dans cette animation les prémices de la librairie, en particulier les fonctions Draw, MegaScreen, Affiche, ainsi que les DefinePal. Les noms des fonctions sont très mal choisis, mais on n'est plus à ça près.
+    <img src="../img/fusion_spr.png">
     <br><br>
-    Cette animation se nomme "Fusion" car il s'agit d'un rassemblement de plusieurs anims que j'avais créées séparément : la sinusoïde, le cyclage de couleurs, l'espèce de balle qui se promène de haut en bas en laissant une trainée sur tout l'écran. C'est assez gerbatif, mais à l'époque moi je trouvais ça hyper cool.
+    Chaque octet de ce fichier vaut 0, 1, 2, 3 ou 4. On additionne cette valeur dans le tableau principal représentant les couleurs à afficher à l'écran. Ça ne valait peut-être pas le coup de créer un fichier pour ça, mais à l'époque, j'ai sûrement dû me dire que ce serait super bien et que ça rendrait l'anim configurable. Sauf que la dimension de 9x9 pixels est en dur dans le code, alors c'est pas si configurable que ça.
     <br><br>
-    Au départ, la balle se promenait dans tout l'écran, mais je ne trouvais pas cela assez fun, car la trainée n'était pas toujours assez longue. Alors j'ai fixé la position en X pour que la balle reste à droite. Ce changement a été fait à l'arrache en laissant des restes de code non nettoyé, on remarquera à ce sujet que la variable "BallDepX" est modifiée durant l'animation, mais n'est jamais utilisée.
+    Dans une première version de l'anim, la balle se promenait dans tout l'écran, mais je ne trouvais pas cela assez fun, car la trainée était parfois trop courte. Alors j'ai fixé la position en X pour que la balle reste à droite. Ce changement a été fait à l'arrache en laissant des restes de code non nettoyé, on notera la variable "BallDepX", qui est modifiée durant l'animation, mais jamais utilisée.
     <br><br>
   </p>
 

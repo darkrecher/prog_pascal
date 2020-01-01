@@ -25,15 +25,13 @@
   </div>
 
   <p>
-    En voilà une jolie anim.
+    J'ai eu l'idée de cette animation en explorant le logiciel "fractint", un vieux truc sous DOS permettant de générer des fractales.
     <br><br>
-    J'ai eu l'idée en explorant le logiciel "fractint", un vieux truc sous DOS permettant de générer des fractales.
+    Fractint montrait les étapes intermédiaires pour générer des plasmas. Ça m'a permis de comprendre comment ça marchait, et j'ai eu envie de refaire pareil.
     <br><br>
-    L'image était générée avec les étapes intermédiaires. Ça m'a permis de comprendre comment le faire, et j'ai eu envie de refaire pareil, car le plasma, c'est quand même bien cool.
-    <br><br>
-    Concernant le fondu entre deux images, c'est assez simple. On décale la couleur de +1 ou -1 jusqu'à arriver à la couleur de destination.
+    La transition entre deux plasmas successifs est réalisée assez simplement : on décale la couleur de +1 ou -1 jusqu'à arriver à la couleur de destination.
     <br><br><br>
-    Par contre, c'est un peu lent. (Ça l'était déjà sur mon vieux PC 486). C'est pas très optimisé car il y a beaucoup de vérifications booléennes sur des pixels, pour déterminer s'il sont déjà plasmatisés ou pas.
+    Comme d'habitude, c'est un peu lent. C'est pas très optimisé car il y a beaucoup de vérifications booléennes sur des pixels, pour déterminer s'il sont déjà plasmatisés ou pas.
     <br><br>
     De plus, ça écrit directement dans la mémoire vidéo comme un bourrin. Il n'y a pas de double buffer. Normalement, ça devrait accélérer, sauf qu'il est possible que chaque écriture dans la mémoire déclenche une interruption et un réaffichage (complet ou partiel). Ça dépend du système. Et je ne sais pas comment js-dos gère ce genre de bourrineries.
     <br><br><br>

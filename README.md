@@ -46,7 +46,3 @@ Voir : [bazar/README.md](bazar/README.md).
 
 TODO : à relire et à compléter.
 
-
-TODO :
-Expliquer (dans le site web) que le fichier EGAVGA.BGI qui a été placé dans artifice.zip a été récupéré à l'arrache depuis ce jeu : [https://www.oldgames.sk/en/game/pisqorx/downloads/](https://www.oldgames.sk/en/game/pisqorx/downloads/). (J'ai pas réussi à le retrouver à un endroit plus simple).
-
