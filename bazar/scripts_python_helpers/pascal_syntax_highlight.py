@@ -45,6 +45,7 @@ PASCAL_KEYWORDS = [
     "shr",
     "shl",
     "Asm",
+    "Const",
 ]
 SPAN_COLOR_WHITE = '<span class="code-keyword">'
 SPAN_COLOR_WHITE_END = "</span>"

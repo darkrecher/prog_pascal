@@ -13,6 +13,7 @@
   <div>
     <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
   </div>
+  <br>
 
   <div>
     <a href="js_dos_player_anim.html?appfilename=plasma3">&gt; Voir cette anim</a>
@@ -36,6 +37,7 @@
     De plus, ça écrit directement dans la mémoire vidéo comme un bourrin. Il n'y a pas de double buffer. Normalement, ça devrait accélérer, sauf qu'il est possible que chaque écriture dans la mémoire déclenche une interruption et un réaffichage (complet ou partiel). Ça dépend du système. Et je ne sais pas comment js-dos gère ce genre de bourrineries.
     <br><br><br>
     La taille de l'animation n'est que de 256x128 pixels, alors que le mode graphique MCGA est en 320x200. La manière dont j'ai généré le plasma ne permet d'avoir que des tailles qui sont des puissances de 2.
+    <br><br>
     J'aurais pu dessiner l'anim sur 512x256 pixels, et n'en afficher qu'une partie. Mais dans ce cas, ça aurait été encore plus lent que ça ne l'est déjà.
   </p>
 

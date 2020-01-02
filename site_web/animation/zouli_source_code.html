@@ -1,0 +1,681 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=zouli">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Zouli - Code source</h1>
+
+  <div>
+    <a href="zouli.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    Il s'agit d'un simulateur de spermatozoïdes. Dans mon esprit un peu fou-fou, les petits serpentins représentaient des spermatozoïdes.
+    <br><br>
+    J'avais déjà fait une animation avec des étoiles qui avancent, en 640x480 16 couleurs. Je ne crois pas que je l'ai conservée.
+    <br><br>
+    L'un des effets spéciaux de cette anim donne l'impression que les étoiles se déplacent en tournant. Ce n'est pas exactement le cas. En fait, les accélérations en X et en Y sont inversées. (C'est pas très clair de juste dire "c'est inversé", ça mériterait plus d'explications, mais j'ai la flemme de les écrire. Regardez le code source si vous voulez les détails).
+    <br><br>
+    J'ai trouvé cette effet spécial par hasard suite à une erreur. J'ai inversé des X et des Y dans mon code, et en le testant je me suis dit : "c'est pas du tout ce que je voulais obtenir, mais c'est méga cool".
+    <br><br><br>
+    Pour info, le texte qui s'affiche au début indique qu'il faut appuyer sur les touches 0 à 9 pour avoir différentes anims. Vous aurez compris tout seul que ce ne sont pas les chiffres du pavé numérique, mais ceux au-dessus des touches de lettres.
+    <br><br>
+    Il y a également 4 touches secrètes, non mentionnées dans le texte, qui permettent de générer des rectangles ou des croix d'étoiles : C, R, P, Z.
+    <br><br>
+    Vous pouvez appuyer plusieurs fois dessus pour avoir plein plein d'étoiles. Attention, ça risque de tout ralentir si vous en générez trop.
+    <br><br>
+    La touche F1 met l'écran en mode texte pour configurer l'animation. Quelques temps avant, j'avais codé un magnifique système de boutons/contrôles/menus en mode texte, que j'aurais pu réutiliser pour cette occasion. Je ne l'ai pas fait. Les codeurs font ça plein de fois : ils codent un truc qui se veut être générique et réutilisable, et ne s'en resservent même pas après.
+    <br><br><br>
+    Je m'étonne moi-même d'avoir pu écrire du code aussi moche et aussi cryptique. La seule chose dont je puisse être à peu près fier dans ce fatras, c'est les listes chaînées pour gérer les étoiles. On peut théoriquement afficher une infinité d'étoiles grâce à ce concept (ce serait très lent et ça boufferait toute la mémoire, mais théoriquement on peut).
+    <br><br>
+    Voici une liste non exhaustive des éléments honteux de ce code :
+    <br><br>
+     - Il y a un maximum de 4 serpents/spermatozoïdes à l'écran. Le mieux aurait été de les mettre dans un tableau fixe de 4 éléments. Mais ils sont dans 4 variables séparées : Snake1, Snake2, Snake3, Snake4.
+    <br><br>
+     - La configuration courante de l'animation est gloubiboulgatisée dans un gros tableau de nombre intitulé "Value". Les cases de ce tableau n'ont pas toutes le même sens. Certaines définissent un nombre d'étoiles, d'autres le type d'effet spécial, d'autres la couleur d'un serpent, ...
+    <br><br>
+     - La fonction HandleStars initialise de nouvelles étoiles, la fonction DisplayStar les déplace et les affiche. Mais la fonction qui déplace et affiche les serpents s'appelle HandleSnake. Ce n'est pas très homogène.
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">Uses</span> MCgaGraf,Crt;
+
+<span class="code-keyword">Type</span>
+  PStar=^TStar;
+  TStar=Record
+    SpeedX,SpeedY:Integer;
+    X,Y,Time:Word;
+    Color:Byte;
+    Suivant:PStar;
+  <span class="code-keyword">end</span>;
+  TSnake=Record
+    X,Y:Word;
+    DepX,DepY:Integer;
+    Color:Byte;
+    Exists,Circle:Boolean;
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  Premier:PStar;
+  X,Y:Word;
+  DepX,DepY:Integer;
+  Compteur:Byte;
+  Choice:Boolean;
+
+<span class="code-keyword">Const</span>
+  X1=0;
+  Y1=0;
+  X2=319;
+  Y2=199;
+  SizeX=X2-X1;
+  SizeY=Y2-Y1;
+  Speed=1;
+  DivSpeed=1;
+  Life=63;
+  DotToCross=Life <span class="code-keyword">div</span> 3;
+  CrossToSquare=Life*2 <span class="code-keyword">div</span> 3;
+  AdvanceColor=1;
+  LimColor=255;
+
+  MarginX=140;
+  MarginY=70;
+  MaxSpeedX=128;
+  MaxSpeedY=128;
+  AccelX=50;
+  AccelY=50;
+  BrakeSpeedX=40;
+  BrakeSpeedY=40;
+
+  Wave:<span class="code-keyword">Array</span>[0..15] <span class="code-keyword">of</span> ShortInt=(0,2,3,4,4,3,2,0,0,-2,-3,-4,-4,-3,-2,0);
+  WaveLength=16;
+
+  CustomScreen:<span class="code-keyword">Array</span>[0..24] <span class="code-keyword">of</span> String=(
+(''),
+('                             CONFIGURATION DE TOUT LE BAZAR'),
+(''),
+(''),
+('                                    SPERMATOZOïDES'),
+(''),
+(' Spermatozoïde 1     Spermatozoïde 2     Spermatozoïde 3     Spermatozoïde 4'),
+(''),
+(''),
+(' Couleur   :         Couleur   :         Couleur   :         Couleur   :'),
+(' Mouvement :         Mouvement :         Mouvement :         Mouvement :'),
+(''),
+('                                        ETOILES'),
+(''),
+('    Quantité d''etoiles rouge :      Quantité d''etoiles verte       :'),
+('    Quantité d''etoiles bleue :      Quantité d''etoiles Arc-en-ciel :'),
+(''),
+('                                     EFFETS SPECIAUX'),
+(''),
+('                                mouvement des etoiles       :'),
+('                                vitesse des étoiles         :'),
+('                                retour vers le centre       :'),
+('                                effet spécial               :'),
+('                                periode de l''effet spécial  :'),
+('+ et - : modifier    Entrée:revenir à la démo'));
+
+
+
+
+<span class="code-keyword">Const</span>
+  RedStars:Byte=0;
+  BlueStars:Byte=0;
+  GreenStars:Byte=0;
+  RainbowStars:Byte=20;
+  CircleStars:Boolean=False;
+  BackToCentre:Boolean=False;
+  SpecialEffect:Boolean=False;
+  NormalEffect:Boolean=True;
+  Toggle:Byte=32;
+  Slow:Byte=0;
+
+<span class="code-keyword">Procedure</span> NewStar(NX,NY:Word;NColor:Byte);
+<span class="code-keyword">var</span> P1,P2:PStar;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Premier=Nil <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    New(P2);
+    Premier:=P2;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    P1:=Premier;
+    <span class="code-keyword">While</span> P1^.Suivant&lt;&gt;Nil <span class="code-keyword">do</span> P1:=P1^.Suivant;
+    New(P2);
+    P1^.Suivant:=P2;
+  <span class="code-keyword">end</span>;
+  P2^.X:=NX;
+  P2^.Y:=NY;
+  P2^.SpeedX:=(NX <span class="code-keyword">shr</span> 7-X1-SizeX <span class="code-keyword">div</span> 2);
+  P2^.SpeedY:=(NY <span class="code-keyword">shr</span> 7-Y1-SizeY <span class="code-keyword">div</span> 2);
+  P2^.Time:=0;
+  P2^.Color:=NColor;
+  P2^.Suivant:=Nil;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DeleteStar(<span class="code-keyword">var</span> P:PStar);
+<span class="code-keyword">var</span> P1,P2:PStar;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> P=Premier <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    P1:=Premier^.Suivant;
+    Dispose(Premier);
+    Premier:=P1;
+    P:=Premier;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    P2:=Premier;
+    <span class="code-keyword">While</span> P2&lt;&gt;P <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      P1:=P2;
+      P2:=P2^.Suivant;
+    <span class="code-keyword">end</span>;
+    P1^.Suivant:=P1^.Suivant^.Suivant;
+    Dispose(P2);
+    P:=P1^.Suivant;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> LittleCross(X,Y:Word;Color:Byte);
+<span class="code-keyword">begin</span>
+  Pixel(X,Y,Color);
+  Pixel(X+1,Y,Color);
+  Pixel(X,Y-1,Color);
+  Pixel(X-1,Y,Color);
+  Pixel(X,Y+1,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> LittleSquare(X,Y:Word;Color:Byte);
+<span class="code-keyword">begin</span>
+  Pixel(X,Y,Color);
+  Pixel(X+1,Y+1,Color);
+  Pixel(X+1,Y-1,Color);
+  Pixel(X-1,Y+1,Color);
+  Pixel(X-1,Y-1,Color);
+  Pixel(X+1,Y,Color);
+  Pixel(X,Y-1,Color);
+  Pixel(X-1,Y,Color);
+  Pixel(X,Y+1,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DrawStar(X,Y,Form:Word;Color:Byte);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Form&lt;DotToCross <span class="code-keyword">then</span> Pixel(X,Y,Color) <span class="code-keyword">else</span>
+  <span class="code-keyword">if</span> Form&lt;CrossToSquare <span class="code-keyword">then</span> LittleCross(X,Y,Color) <span class="code-keyword">else</span>
+  LittleSquare(X,Y,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Destroy;
+<span class="code-keyword">var</span> P:PStar;
+<span class="code-keyword">begin</span>
+  P:=Premier;
+  <span class="code-keyword">While</span> P&lt;&gt;Nil <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Premier:=Premier^.Suivant;
+    Dispose(P);
+    P:=Premier;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DisplayStar(P:PStar);
+<span class="code-keyword">var</span> P1:PStar;Suppressed:Boolean;RealX,RealY:Integer;
+<span class="code-keyword">begin</span>
+  P1:=P;
+  Suppressed:=False;
+  <span class="code-keyword">While</span> P1&lt;&gt;Nil <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">With</span> P1^ <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      RealX:=X <span class="code-keyword">shr</span> 7;
+      RealY:=Y <span class="code-keyword">shr</span> 7;
+      DrawStar(RealX,RealY,Time,0);
+      Inc(Time);
+
+      <span class="code-keyword">if</span> (Time=Life) or (RealX&lt;X1) or (RealX&gt;X2) or (RealY&lt;Y1) or (RealY&gt;Y2) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Suppressed:=True;
+        DeleteStar(P1);
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> NormalEffect <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(X,(SpeedX*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+          Inc(Y,(SpeedY*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+        <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> SpecialEffect <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Choice <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            Inc(X,-(SpeedY*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+            Inc(Y,(SpeedX*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+          <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+            Inc(X,(SpeedY*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+            Inc(Y,-(SpeedX*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+          <span class="code-keyword">end</span>;
+        <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Choice <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            Inc(X,(SpeedX*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+            Inc(Y,(SpeedY*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+          <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+            Inc(X,-(SpeedX*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+            Inc(Y,-(SpeedY*Time*Speed) <span class="code-keyword">div</span> DivSpeed);
+          <span class="code-keyword">end</span>;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> CircleStars <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(X,Wave[Time <span class="code-keyword">mod</span> WaveLength] <span class="code-keyword">shl</span> 7);
+          Inc(Y,Wave[(Time+WaveLength <span class="code-keyword">div</span> 4) <span class="code-keyword">mod</span> WaveLength] <span class="code-keyword">shl</span> 7);
+        <span class="code-keyword">end</span>;
+
+        RealX:=X <span class="code-keyword">shr</span> 7;
+        RealY:=Y <span class="code-keyword">shr</span> 7;
+        <span class="code-keyword">if</span> BackToCentre <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Y <span class="code-keyword">shr</span> 7&lt;Y1+SizeY <span class="code-keyword">div</span> 2 <span class="code-keyword">then</span> Inc(SpeedY);
+          <span class="code-keyword">if</span> Y <span class="code-keyword">shr</span> 7&gt;Y1+SizeY <span class="code-keyword">div</span> 2 <span class="code-keyword">then</span> Dec(SpeedY);
+          <span class="code-keyword">if</span> X <span class="code-keyword">shr</span> 7&lt;X1+SizeX <span class="code-keyword">div</span> 2 <span class="code-keyword">then</span> Inc(SpeedX);
+          <span class="code-keyword">if</span> X <span class="code-keyword">shr</span> 7&gt;X1+SizeX <span class="code-keyword">div</span> 2 <span class="code-keyword">then</span> Dec(SpeedX);
+        <span class="code-keyword">end</span>;
+
+        <span class="code-keyword">if</span> (Time <span class="code-keyword">mod</span> AdvanceColor=0) <span class="code-keyword">and</span> (Color&lt;LimColor) <span class="code-keyword">then</span> Inc(Color);
+        DrawStar(RealX,RealY,Time,Color);
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Suppressed <span class="code-keyword">then</span> Suppressed:=False <span class="code-keyword">else</span> P1:=P1^.Suivant;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  Snake1,Snake2,Snake3,Snake4:TSnake;
+
+<span class="code-keyword">Procedure</span> SetupSnakes(Ex1,Ex2,Ex3,Ex4,Circle1,Circle2,Circle3,Circle4:Boolean;
+Color1,Color2,Color3,Color4:Byte);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Snake1 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Exists:=Ex1;
+    Circle:=Circle1;
+    Color:=Color1;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">With</span> Snake2 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Exists:=Ex2;
+    Circle:=Circle2;
+    Color:=Color2;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">With</span> Snake3 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Exists:=Ex3;
+    Circle:=Circle3;
+    Color:=Color3;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">With</span> Snake4 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Exists:=Ex4;
+    Circle:=Circle4;
+    Color:=Color4;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> SetupStars(Red,Green,Blue,Rainbow:Byte);
+<span class="code-keyword">begin</span>
+  RedStars:=Red;
+  BlueStars:=Blue;
+  GreenStars:=Green;
+  RainbowStars:=Rainbow;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> SetupEffects(ACircleStars,ABackToCentre,ASpecialEffect,ANormalEffect:Boolean;
+AToggle,ASlow:Byte);
+<span class="code-keyword">begin</span>
+  CircleStars:=ACircleStars;
+  BackToCentre:=ABackToCentre;
+  SpecialEffect:=ASpecialEffect;
+  NormalEffect:=ANormalEffect;
+  Toggle:=AToggle;
+  Slow:=ASlow;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Custom;
+Const
+  XBox:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> Byte=(5,25,45,65,14,34,54,74,14,34,54,74,31,69,31,69,63,63,63,63,63);
+  YBox:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> Byte=(9,9,9,9,10,10,10,10,11,11,11,11,15,15,16,16,20,21,22,23,24);
+  GoDown:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> Byte=(4,4,4,4,4,4,4,4,4,3,3,2,2,2,2,1,1,1,1,1,1);
+  GoUp:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> ShortInt=(-20,-19,-18,-17,4,4,4,4,4,4,4,4,4,2,2,2,1,1,1,1,1);
+  Max:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> Byte=(1,1,1,1,3,3,3,3,1,1,1,1,50,50,50,50,1,100,1,2,7);
+  RectangleX1:<span class="code-keyword">Array</span>[0..6] <span class="code-keyword">of</span> Byte=(14,34,54,74,32,69,63);
+  RectangleY1:<span class="code-keyword">Array</span>[0..6] <span class="code-keyword">of</span> Byte=(10,10,10,10,15,15,20);
+  RectangleX2:<span class="code-keyword">Array</span>[0..6] <span class="code-keyword">of</span> Byte=(20,40,60,80,34,71,73);
+  RectangleY2:<span class="code-keyword">Array</span>[0..6] <span class="code-keyword">of</span> Byte=(11,11,11,11,16,16,24);
+  ToggleValues:<span class="code-keyword">Array</span>[0..7] <span class="code-keyword">of</span> Byte=(0,2,4,8,16,32,64,128);
+
+<span class="code-keyword">var</span> C:Char;Pos:Byte;Value:<span class="code-keyword">Array</span>[0..20] <span class="code-keyword">of</span> Byte;
+i:Byte;
+
+<span class="code-keyword">Procedure</span> OffCursor;Assembler;
+<span class="code-keyword">asm</span>
+<span class="code-assembler">  mov ah,01
+  mov ch,15
+  mov cl,0
+  int $10</span>
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Rectangle(X1,Y1,X2,Y2:Byte);
+<span class="code-keyword">var</span> i,j:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=Y1 <span class="code-keyword">to</span> Y2 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    GotoXY(X1,i);
+    <span class="code-keyword">for</span> j:=X1 <span class="code-keyword">to</span> X2 <span class="code-keyword">do</span> Write(' ');
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> YesNo(X:Byte):string;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> X=0 <span class="code-keyword">then</span> YesNo:='Desactivé';
+  <span class="code-keyword">if</span> X=1 <span class="code-keyword">then</span> YesNo:='Activé   ';
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> Color(X:Byte):string;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> X=0 <span class="code-keyword">then</span> Color:='Rouge  ';
+  <span class="code-keyword">if</span> X=1 <span class="code-keyword">then</span> Color:='Vert   ';
+  <span class="code-keyword">if</span> X=2 <span class="code-keyword">then</span> Color:='Bleu   ';
+  <span class="code-keyword">if</span> X=3 <span class="code-keyword">then</span> Color:='Rainbow';
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> Movement(X:Byte):string;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> X=0 <span class="code-keyword">then</span> Movement:='Normal';
+  <span class="code-keyword">if</span> X=1 <span class="code-keyword">then</span> Movement:='Cercle';
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> NewStr(X:Byte):string;
+<span class="code-keyword">var</span> S:string;
+<span class="code-keyword">begin</span>
+  Str(X,S);
+  <span class="code-keyword">While</span> Length(S)&lt;3 <span class="code-keyword">do</span> S:=S+' ';
+  NewStr:=S;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> SpeEffect(X:Byte):string;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> X=0 <span class="code-keyword">then</span> SpeEffect:='Aucun   ';
+  <span class="code-keyword">if</span> X=1 <span class="code-keyword">then</span> SpeEffect:='Yo-Yo   ';
+  <span class="code-keyword">if</span> X=2 <span class="code-keyword">then</span> SpeEffect:='Rotation';
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> WhatToWrite:string;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Case</span> Pos <span class="code-keyword">of</span>
+    0..3:WhatToWrite:=YesNo(Value[Pos]);
+    4..7:WhatToWrite:=Color(Value[Pos]);
+    8..11:WhatToWrite:=Movement(Value[Pos]);
+    12..15:WhatToWrite:=NewStr(Value[Pos]);
+    16:WhatToWrite:=Movement(Value[Pos]);
+    17:WhatToWrite:=NewStr(Value[Pos]);
+    18:WhatToWrite:=YesNo(Value[Pos]);
+    19:WhatToWrite:=SpeEffect(Value[Pos]);
+    20:WhatToWrite:=NewStr(ToggleValues[Value[Pos]]);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefineValueSnake(Snake:TSnake;V1,V2,V3:Byte);
+<span class="code-keyword">begin</span>
+  Value[V1]:=Ord(Snake.Exists);
+  Value[V3]:=Ord(Snake.Circle);
+  <span class="code-keyword">Case</span> Snake.Color <span class="code-keyword">of</span>
+    1:Value[V2]:=0;
+    65:Value[V2]:=1;
+    129:Value[V2]:=2;
+    193:Value[V2]:=3;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  CloseScreen;
+  TextBackGround(Blue);
+  TextColor(15);
+  OffCursor;
+  ClrScr;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 23 <span class="code-keyword">do</span> WriteLn(CustomScreen[i]);
+  TextColor(LightGreen);
+  Write(CustomScreen[24]);
+  TextColor(15);
+  TextBackGround(7);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 6 <span class="code-keyword">do</span> Rectangle(RectangleX1[i],RectangleY1[i],RectangleX2[i],RectangleY2[i]);
+
+  DefineValueSnake(Snake1,0,4,8);
+  DefineValueSnake(Snake2,1,5,9);
+  DefineValueSnake(Snake3,2,6,10);
+  DefineValueSnake(Snake4,3,7,11);
+  Value[12]:=RedStars;
+  Value[13]:=GreenStars;
+  Value[14]:=BlueStars;
+  Value[15]:=RainbowStars;
+  Value[16]:=Ord(CircleStars);
+  Value[17]:=100-Slow;
+  Value[18]:=Ord(BackToCentre);
+  <span class="code-keyword">if</span> NormalEffect <span class="code-keyword">then</span> Value[19]:=0 <span class="code-keyword">else</span> <span class="code-keyword">if</span> SpecialEffect <span class="code-keyword">then</span> Value[19]:=2 <span class="code-keyword">else</span> Value[19]:=1;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 7 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Toggle=ToggleValues[i] <span class="code-keyword">then</span> Value[20]:=i;
+
+  <span class="code-keyword">for</span> Pos:=0 <span class="code-keyword">to</span> 20 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    GotoXY(XBox[Pos],YBox[Pos]);
+    Write(WhatToWrite);
+  <span class="code-keyword">end</span>;
+  Pos:=0;
+  TextBackGround(Green);
+  TextColor(0);
+  GotoXY(XBox[Pos],YBox[Pos]);
+  Write(WhatToWrite);
+  <span class="code-keyword">Repeat</span>
+    C:='Z';
+    <span class="code-keyword">if</span> keypressed <span class="code-keyword">then</span> C:=Readkey;
+    <span class="code-keyword">if</span> C=#0 <span class="code-keyword">then</span> C:=Readkey;
+    <span class="code-keyword">if</span> (C=#72) or (C=#80) or (C=#75) or (C=#77) or (C='+') or (C='-') <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      TextBackGround(7);
+      TextColor(15);
+      GotoXY(XBox[Pos],YBox[Pos]);
+      Write(WhatToWrite);
+      <span class="code-keyword">if</span> C=#75 <span class="code-keyword">then</span> <span class="code-keyword">if</span> Pos=0 <span class="code-keyword">then</span> Pos:=20 <span class="code-keyword">else</span> Dec(Pos);
+      <span class="code-keyword">if</span> C=#77 <span class="code-keyword">then</span> Inc(Pos);
+      <span class="code-keyword">if</span> C=#80 <span class="code-keyword">then</span> Inc(Pos,GoDown[Pos]);
+      <span class="code-keyword">if</span> C=#72 <span class="code-keyword">then</span> Dec(Pos,GoUp[Pos]);
+      Pos:=Pos <span class="code-keyword">mod</span> 21;
+      <span class="code-keyword">if</span> C='+' <span class="code-keyword">then</span> <span class="code-keyword">if</span> Value[Pos]=Max[Pos] <span class="code-keyword">then</span> Value[Pos]:=0 <span class="code-keyword">else</span> Inc(Value[Pos]);
+      <span class="code-keyword">if</span> C='-' <span class="code-keyword">then</span> <span class="code-keyword">if</span> Value[Pos]=0 <span class="code-keyword">then</span> Value[Pos]:=Max[Pos] <span class="code-keyword">else</span> Dec(Value[Pos]);
+      TextBackGround(Green);
+      TextColor(0);
+      GotoXY(XBox[Pos],YBox[Pos]);
+      Write(WhatToWrite);
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">Until</span> C=#13;
+  SetupSnakes(Value[0]=1,Value[1]=1,Value[2]=1,Value[3]=1,Value[8]=1,Value[9]=1,Value[10]=1,Value[11]=1,
+  Value[4]*64+1,Value[5]*64+1,Value[6]*64+1,Value[7]*64+1);
+  SetupStars(Value[12],Value[13],Value[14],Value[15]);
+  SetupEffects(Value[16]=1,Value[18]=1,Value[19]=2,Value[19]=0,ToggleValues[Value[20]],100-Value[17]);
+  Choice:=False;
+  MCGAScreen;
+  DefinePal;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> InitSnake(<span class="code-keyword">var</span> Snake:TSnake;AColor:Byte);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Snake <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    X:=(Random(SizeX)+X1) <span class="code-keyword">shl</span> 7;
+    Y:=(Random(SizeY)+Y1) <span class="code-keyword">shl</span> 7;
+    DepX:=Random(255)-128;
+    DepY:=Random(255)-128;
+    Color:=AColor;
+    Exists:=False;
+    Circle:=False;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> HandleSnake(<span class="code-keyword">var</span> Snake:TSnake);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Snake.Exists <span class="code-keyword">then</span> <span class="code-keyword">With</span> Snake <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> Circle <span class="code-keyword">then</span> NewStar(X+Wave[Compteur <span class="code-keyword">mod</span> WaveLength] <span class="code-keyword">shl</span> 7,
+    Y+Wave[(Compteur+WaveLength <span class="code-keyword">div</span> 4) <span class="code-keyword">mod</span> WaveLength] <span class="code-keyword">shl</span> 7,Color)
+    <span class="code-keyword">else</span> NewStar(X,Y,Color);
+    Inc(X,DepX);
+    Inc(Y,DepY);
+    <span class="code-keyword">if</span> X <span class="code-keyword">shr</span> 7&lt;MarginX+X1 <span class="code-keyword">then</span> Inc(DepX,BrakeSpeedX)
+    <span class="code-keyword">else</span> <span class="code-keyword">if</span> MarginX+X <span class="code-keyword">shr</span> 7&gt;X2 <span class="code-keyword">then</span> Dec(DepX,BrakeSpeedX)
+    <span class="code-keyword">else</span> Inc(DepX,Random(AccelX+1)-AccelX <span class="code-keyword">div</span> 2);
+    <span class="code-keyword">if</span> Y2-Y <span class="code-keyword">shr</span> 7&lt;MarginY <span class="code-keyword">then</span> Dec(DepY,BrakeSpeedY)
+    <span class="code-keyword">else</span> <span class="code-keyword">if</span> Y <span class="code-keyword">shr</span> 7-Y1&lt;MarginY <span class="code-keyword">then</span> Inc(DepY,BrakeSpeedY)
+    <span class="code-keyword">else</span> Inc(DepY,Random(AccelY+1)-AccelY <span class="code-keyword">div</span> 2);
+    <span class="code-keyword">if</span> DepX&gt;MaxSpeedX <span class="code-keyword">then</span> DepX:=MaxSpeedX;
+    <span class="code-keyword">if</span> DepX&lt;-MaxSpeedX <span class="code-keyword">then</span> DepX:=-MaxSpeedX;
+    <span class="code-keyword">if</span> DepY&gt;MaxSpeedY <span class="code-keyword">then</span> DepY:=MaxSpeedY;
+    <span class="code-keyword">if</span> DepY&lt;-MaxSpeedY <span class="code-keyword">then</span> DepY:=-MaxSpeedY;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> HandleStars(Stars,Color:Byte);
+<span class="code-keyword">var</span> i:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Stars&lt;&gt;0 <span class="code-keyword">then</span> <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> Stars-1 <span class="code-keyword">do</span> NewStar((Random(SizeX+1)+X1) <span class="code-keyword">shl</span> 7,(Random(SizeY+1)+Y1) <span class="code-keyword">shl</span> 7,Color);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Predefined(x:ShortInt);
+Const
+SnakeEx:<span class="code-keyword">Array</span>[0..3,0..3] <span class="code-keyword">of</span> Boolean=((True,False,False,False),
+                                     (False,True,False,False),
+                                     (False,False,True,False),
+                                     (False,True,False,True));
+AEffects:<span class="code-keyword">Array</span>[0..8,0..3] <span class="code-keyword">of</span> Boolean=((False,True,False,True),
+                                      (False,False,False,False),
+                                      (False,True,True,False),
+                                      (True,False,False,True),
+                                      (False,False,False,False),
+                                      (False,False,True,False),
+                                      (False,True,False,True),
+                                      (True,False,False,True),
+                                      (True,True,True,False));
+BEffects:<span class="code-keyword">Array</span>[0..8,0..1] <span class="code-keyword">of</span> Byte=((32,30),(32,30),(32,30),(32,20),
+(16,30),(128,30),(32,30),(32,30),(8,45));
+Stars:<span class="code-keyword">Array</span>[0..4,0..3] <span class="code-keyword">of</span> Byte=((4,0,0,0),(0,4,0,0),(0,0,4,0),(10,0,0,0),(1,1,1,0));
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> x=-1 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    SetupStars(0,0,0,0);
+    SetupSnakes(True,True,True,False,False,False,False,False,1,65,129,193);
+    SetupEffects(False,False,False,True,32,25)
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> x in [0..3] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    SetupStars(0,0,0,0);
+    SetupSnakes(SnakeEx[x,0],SnakeEx[x,1],SnakeEx[x,2],SnakeEx[x,3],SnakeEx[x,0],SnakeEx[x,1],SnakeEx[x,2],SnakeEx[x,3],
+    Random(3)*64+1,Random(3)*64+1,Random(3)*64+1,Random(3)*64+1);
+    SetupEffects(AEffects[x,0],AEffects[x,1],AEffects[x,2],AEffects[x,3],
+    BEffects[x,0],BEffects[x,1]);
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> x in [4..8] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    SetupStars(Stars[x-4,0],Stars[x-4,1],Stars[x-4,2],Stars[x-4,3]);
+    SetupSnakes(False,False,False,False,False,False,False,False,1,1,1,1);
+    SetupEffects(AEffects[x,0],AEffects[x,1],AEffects[x,2],AEffects[x,3],
+    BEffects[x,0],BEffects[x,1]);
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> x=9 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    SetupStars(0,0,0,4);
+    SetupSnakes(True,True,True,True,False,False,False,False,193,193,193,193);
+    SetupEffects(False,False,False,True,32,0);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> SquareStar(X1,Y1,X2,Y2,Espace:Word);
+<span class="code-keyword">var</span> i,j:Word;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> (X2-X1+1) <span class="code-keyword">div</span> Espace <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> (Y2-Y1+1) <span class="code-keyword">div</span> Espace <span class="code-keyword">do</span>
+  NewStar((X1+i*Espace) <span class="code-keyword">shl</span> 7,(Y1+j*Espace) <span class="code-keyword">shl</span> 7,193);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  i:Integer;
+  C:Char;
+  Stop:Boolean;
+
+<span class="code-keyword">begin</span>
+  WriteLn('                             Spermatozoïdes Simulator');
+  GotoXY(50,WhereY+1);
+  WriteLn('Made by R/eche\r Grzmktbq');
+  WriteLn;
+  WriteLn('Pendant la démo, vous pouvez appuyer sur les touches de 0 à 9');
+  WriteLn('pour voir les supers effets spéciaux');
+  WriteLn;
+  WriteLn('et sur la touche F1 pour configurer vous même les supers effets spéciaux');
+  WriteLn;
+  WriteLn;
+  WriteLn;
+  WriteLn('Par contre, c''est bizarre, c''est plus rapide sur un 486 que sur les Pentium de mes potes');
+  <span class="code-keyword">While</span> keypressed <span class="code-keyword">Do</span> Readkey;
+  Readkey;
+  MCGaScreen;
+  Randomize;
+  Premier:=Nil;
+  Degrade(1,63,0,0,32,63,63,63);
+  Degrade(33,63,63,63,64,0,0,0);
+  Degrade(65,0,63,0,96,63,63,63);
+  Degrade(97,63,63,63,128,0,0,0);
+  Degrade(129,0,0,63,160,63,63,63);
+  Degrade(161,63,63,63,192,0,0,0);
+
+  Degrade(193,63,0,0,202,63,63,0);
+  Degrade(203,63,63,0,212,0,63,0);
+  Degrade(213,0,63,0,223,0,63,63);
+  Degrade(224,0,63,63,233,0,0,63);
+  Degrade(234,0,0,63,245,63,0,63);
+  Degrade(245,63,0,63,255,0,0,0);
+
+  DefinePal;
+  <span class="code-keyword">While</span> keypressed <span class="code-keyword">do</span> Readkey;
+  Compteur:=0;
+  Stop:=False;
+  InitSnake(Snake1,1);
+  InitSnake(Snake2,65);
+  InitSnake(Snake3,129);
+  InitSnake(Snake4,193);
+  Predefined(-1);
+  <span class="code-keyword">Repeat</span>
+    DisplayStar(Premier);
+    Delay(Slow);
+    Draw(X1,Y1,X2,Y2);
+    Affiche;
+
+    Inc(Compteur);
+    <span class="code-keyword">if</span> (Toggle&lt;&gt;0) <span class="code-keyword">and</span> (Compteur <span class="code-keyword">mod</span> Toggle=0) <span class="code-keyword">then</span> Choice:=<span class="code-keyword">not</span>(Choice);
+
+    HandleSnake(Snake1);
+    HandleSnake(Snake2);
+    HandleSnake(Snake3);
+    HandleSnake(Snake4);
+
+    HandleStars(RedStars,1);
+    HandleStars(GreenStars,65);
+    HandleStars(BlueStars,129);
+    HandleStars(RainbowStars,193);
+
+    <span class="code-keyword">if</span> Keypressed <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      C:=Readkey;
+      <span class="code-keyword">if</span> C=#59 <span class="code-keyword">then</span> Custom;
+      <span class="code-keyword">if</span> C=#27 <span class="code-keyword">then</span> Stop:=True;
+      <span class="code-keyword">if</span> C in ['0'..'9'] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Predefined(Ord(C)-48);
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> C='c' <span class="code-keyword">then</span> SquareStar(150,90,170,110,4);
+      <span class="code-keyword">if</span> C='r' <span class="code-keyword">then</span> SquareStar(120,70,140,90,4);
+      <span class="code-keyword">if</span> C='p' <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        SquareStar(0,100,319,100,4);
+        SquareStar(160,0,160,199,4);
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> C='z' <span class="code-keyword">then</span> SquareStar(0,0,319,199,16);
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">Until</span> Stop;
+  CloseScreen;
+  Destroy
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>
