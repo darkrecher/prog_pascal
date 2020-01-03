@@ -25,13 +25,13 @@
   <p>
     Il s'agit de la librairie que j'ai le plus utilisée pour mes jeux et mes animations. Elle permet d'activer le mode graphique MCGA (320x200, 256 couleurs), qui est devenu mon mode graphique de prédilection. Le nombre hallucinatoirement élevé de couleurs m'offrait des possibilités de création infinie.
     <br><br>
-    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "sa couleur sera en rouge=130, vert=250, bleu=60". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", sachant que vous avez préalablement défini la couleur numéro 42 à rouge=130, vert=250, bleu=60. Vous l'aurez compris, la palette n'a que 256 couleurs.
+    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "sa couleur sera en rouge=40, vert=63, bleu=20". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", sachant que vous avez préalablement défini la couleur numéro 42 à rouge=40, vert=63, bleu=20. Vous l'aurez compris, la palette n'a que 256 couleurs. Et, étrangement, les dosages RVB ne variaient que de 0 à 63, et non pas 0 à 255. Sûrement une autre contrainte.
     <br><br>
     C'était très limité, mais ce principe de palette permettait de créer des effets intéressants. Vous pouviez changer très rapidement toutes les couleurs de l'écran en modifiant uniquement la palette. Par exemple, un dessin rouge et vert devenait d'un seul coup bleu et jaune.
     <br><br>
     Les écrans d'ordinateur de l'époque étaient tous en 4/3, or cette proportion ne correspond pas aux 320x200 pixels. Les pixels n'étaient pas carrés. Si vous dessiniez à l'écran une forme de 20 pixels de haut et 20 pixels de large, ça faisait un rectangle. C'était pas très pratique, mais on faisait avec.
     <br><br>
-    Il n'y avait besoin que d'un seul octet par pixel. L'écran entier était donc défini par un buffer mémoire de 320*200 = 64 000 octets, soit un peu en dessous de la limite des tailles de buffer mémoire du Pascal : 65 536 octets. Avec du 320*240, on aurait eu des pixels carrés, mais il aurait fallu 76 800 octets. Cette limitation à 65 536 provenait de la gestion de la mémoire, une bidouille avec le registre de segment et le registre d'offset. Les registres ont une taille de seulement 2 octets, ce qui ne permet de ne compter que de 0 à 65 535.
+    Il n'y avait besoin que d'un seul octet par pixel. L'écran entier était donc défini par un buffer mémoire de 320*200 = 64 000 octets, soit un peu en dessous de la limite des tailles de buffer mémoire du Pascal : 65 536 octets. Avec du 320*240, on aurait eu des pixels carrés, mais il aurait fallu 76 800 octets. Cette limitation à 65 536 provenait de la gestion de la mémoire, une bidouille avec le registre de segment et le registre d'offset. Les registres ont une taille de seulement 2 octets, ce qui permet de ne compter que de 0 à 65 535.
     <br><br>
     Le mode graphique MCGA n'est pas géré nativement par le Turbo Pascal, il a donc fallu tripoter directement dans la mémoire vidéo et utiliser des "interruptions". Il s'agit d'un truc d'ordinateur bas niveau permettant de biduler des machins. Ça ne marche plus comme ça sur les machines de maintenant, mais si vous voulez plus de détails, consultez la série de livres "La Bible PC".
     <br><br>
@@ -41,7 +41,7 @@
     <br><br>
     Le buffer mémoire étant continu, si on définit un pixel trop à droite, par exemple en X=345, Y=100, ça se reporte sur la ligne d'en dessous, on définit alors le pixel X=25, Y=101. Si on va vraiment trop en bas : X=310, Y=201, ça plante, car on écrit à un endroit non autorisé de la mémoire. Je ne voulais pas m'embêter à gérer ça dans mes anims, alors j'ai ajouté un contrôle des coordonnées. Mais j'avais peur qu'une vérification pour chaque pixel rende l'exécution trop lente. Je l'ai donc codé en assembleur. Et pour optimiser encore plus, je n'ai pas calculé l'emplacement mémoire via une multiplication : offset_mem = Y*200 + X. Par contre je ne sais plus trop quel astuce j'ai utilisée. Je vous laisse consulter le corps de la fonction "Pixel".
     <br><br>
-    Il existait deux versions de cette librairie MCGAGraf, je ne saurais pas retrouver la première. La version la plus récente comporte des fonctions d'affichage de texte : LoadCarac, OutText, TranspText, TextLength. Ces fonctions nécessitent la présence du fichier "MCGACHAR", contenant la police de caractères. La dernière version de la lib et ce fichier de police sont téléchargeable en haut de cette page web.
+    Il existait deux versions de cette librairie MCGAGraf, je ne saurais pas retrouver la première. La version la plus récente comporte des fonctions d'affichage de texte : LoadCarac, OutText, TranspText, TextLength. Ces fonctions nécessitent la présence du fichier "MCGACHAR", contenant la police de caractères. La dernière version de la lib et ce fichier de police sont téléchargeables ici.
     <br><br>
     <img src="mcgachar.png">
     <br>
@@ -56,7 +56,6 @@
   <div class="sourcecode">
 
 <pre>
-
 unit MCGAGraf;
 
 interface

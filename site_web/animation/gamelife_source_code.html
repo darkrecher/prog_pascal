@@ -1,0 +1,200 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=gamelife">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Game of Life - Code source</h1>
+
+  <div>
+    <a href="gamelife.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    Le "jeu de la vie" de Conway. C'est une simulation d'une population de gens (des humains, des fourmis, ce que vous voulez).
+    <br><br>
+    Les règles sont assez simples. Lorsqu'un pixel est éclairé, on considère qu'il y a une personne dessus. Si il y a moins de 2 personnes dans les 8 pixels autour d'elle, elle crèvera au prochain tour, car elle est trop seule. D'autre part, s'il y a plus de 3 personnes autour d'elle, elle crèvera aussi au prochain tour, à cause de la surpopulation.
+    <br><br>
+    Lorsqu'un pixel n'est pas éclairé, c'est qu'il n'est pas peuplé. Si il y a exactement 3 personnes dans les 8 pixels autour, on mettra au prochain tour une personne sur ce pixel, qui vient de naître.
+    <br><br><br>
+    Je me souviens d'une discussion philosophique avec une fille, lorsque j'étais au lycée. Elle voulait avoir mon opinion sur Dieu, le monde, tout ça... Je lui avais donné comme exemple cette animation. Dieu a codé un truc au départ, de la même manière que moi j'ai codé cette anim. Et puis il l'a lancé, et maintenant il la regarde. Il est incapable de prédire l'état du monde dans quelques jours/mois/année, de la même manière que je suis incapable de prédire ce qu'affichera mon anim dans quelques tours de jeu. Pourtant, c'est totalement prévisible, puisque les règles sont clairement définies et sont déterministes. Mais c'est trop compliqué de prévoir, et ça va trop vite, même pour Dieu. Cependant, il est possible qu'un jour où l'autre, Dieu arrête le monde, de la même manière que je peux arrêter mon programme.
+    <br><br>
+    L'idée de cette explication, c'était d'avoir l'air suffisamment intelligent pour pouvoir ensuite baiser avec la fille en question. J'ai échoué. Mais c'est devenu ma meilleure amie et j'ai gardé contact avec elle.
+    <br><br><br>
+    Dans le code source, vous remarquerez le très amusant nom de type de variable : "TLotsOfPunyLittleHuman".
+    <br><br>
+    Ce type est un tableau de 202 lignes (de -1 à 200) et 322 colonnes (de -1 à 320). C'est à dire 2 lignes et 2 colonnes de plus que les pixels de l'écran : 320x200. Coup de bol, ça fait un tableau de 64521 éléments, ce qui ne dépasse pas la limite Turbo-Pascalienne de 65536 octets.
+    <br><br>
+    Les lignes et colonnes des bords du tableau sont à False (il n'y a pas de personne dedans), et on ne les recalcule pas d'un tour à l'autre.
+    <br><br>
+    Ces lignes et ces colonnes supplémentaires permettent d'optimiser les traitements. Pour chaque pixel de l'écran, il suffit de compter le nombre de personnes autour, sans avoir à réfléchir si c'est un pixel du bord de l'écran ou pas. Ça élimine tout un tas de "if then".
+    <br><br>
+    Et sinon, la palette de couleur est un arc-en-ciel. Ça valait le coup de faire cette anim dans un mode graphique avec 256 couleurs, rien que pour ça.
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">Uses</span> Crt,Dos;
+
+<span class="code-keyword">Type</span>
+  Screen=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  PElement=^TElement;
+  Telement=Screen;
+  PLotsOfPunyLittleHuman=^TLotsOfPunyLittleHuman;
+  TLotsOfPunyLittleHuman=<span class="code-keyword">Array</span>[-1..320,-1..200] <span class="code-keyword">of</span> Boolean;
+
+<span class="code-keyword">Var</span>
+  Reg:Registers;
+  Pal:<span class="code-keyword">Array</span>[0..255,0..2] <span class="code-keyword">of</span> Byte;
+  Video,Bouffeur:PElement;
+  World,NewWorld:PLotsOfPunyLittleHuman;
+  x,y,i,LimX,LimY,Color,Timer:Integer;
+  ColorTab:<span class="code-keyword">Array</span>[0..319] <span class="code-keyword">of</span> Byte;
+
+<span class="code-keyword">Procedure</span> MegaScreen;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    <span class="code-assembler">Mov AH,$0000;
+    Mov AL,$0013;
+    Int $10;</span>
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:$0000]);
+  New(Bouffeur);
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Video^[y,x]:=0;
+    Bouffeur^[y,x]:=0;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefinePal2;
+<span class="code-keyword">var</span> i,Light:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> Light:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 15 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=31+Light*32;
+      Pal[Light*128+i,1]:=31-2*i+Light*32;
+      Pal[Light*128+i,2]:=31-2*i+Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=16 <span class="code-keyword">to</span> 31 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=31+Light*32;
+      Pal[Light*128+i,1]:=Light*32;
+      Pal[Light*128+i,2]:=2*(i-16)+Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=32 <span class="code-keyword">to</span> 47 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=31-2*(i-32)+Light*32;
+      Pal[Light*128+i,1]:=Light*32;
+      Pal[Light*128+i,2]:=31+Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=48 <span class="code-keyword">to</span> 63 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=Light*32;
+      Pal[Light*128+i,1]:=2*(i-48)+Light*32;
+      Pal[Light*128+i,2]:=31+Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=64 <span class="code-keyword">to</span> 79 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=Light*32;
+      Pal[Light*128+i,1]:=31+Light*32;
+      Pal[Light*128+i,2]:=31-2*(i-64)+Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=80 <span class="code-keyword">to</span> 95 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=2*(i-80)+Light*32;
+      Pal[Light*128+i,1]:=31+Light*32;
+      Pal[Light*128+i,2]:=Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=96 <span class="code-keyword">to</span> 111 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=31-2*(i-96)+Light*32;
+      Pal[Light*128+i,1]:=31-2*(i-96)+Light*32;
+      Pal[Light*128+i,2]:=Light*32;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=112 <span class="code-keyword">to</span> 127 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Pal[Light*128+i,0]:=2*(i-112)+Light*32;
+      Pal[Light*128+i,1]:=2*(i-112)+Light*32;
+      Pal[Light*128+i,2]:=2*(i-112)+Light*32;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Pal[0,0]:=0;
+  Pal[0,1]:=0;
+  Pal[0,2]:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Affiche;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> Move(Bouffeur^[i,0],Video^[i,0],320);
+<span class="code-keyword">end</span>;
+
+
+<span class="code-keyword">Function</span> CountPeople(X,Y:Integer):Byte;
+<span class="code-keyword">var</span> People:Byte;
+<span class="code-keyword">begin</span>
+  People:=0;
+  <span class="code-keyword">if</span> World^[X+1,Y-1] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X+1,Y] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X+1,Y+1] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X,Y+1] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X,Y-1] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X-1,Y+1] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X-1,Y] <span class="code-keyword">then</span> Inc(People);
+  <span class="code-keyword">if</span> World^[X-1,Y-1] <span class="code-keyword">then</span> Inc(People);
+  CountPeople:=People;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  MegaScreen;
+  DefinePal2;
+  Reg.AH:=$0010;
+  Reg.AL:=$0012;
+  Reg.BX:=$0000;
+  Reg.CX:=$0100;
+  Reg.ES:=Seg(Pal);
+  Reg.DX:=Ofs(Pal);
+  Intr($10,Reg);
+  Randomize;
+  New(World);
+  New(NewWorld);
+  LimX:=320;
+  LimY:=200;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> LimX-1 <span class="code-keyword">do</span> ColorTab[i]:=Round(128/LimX*i);
+  Timer:=0;
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=-1 <span class="code-keyword">to</span> 320 <span class="code-keyword">do</span> World^[x,-1+y*(LimY+1)]:=False;
+  <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=-1 <span class="code-keyword">to</span> 200 <span class="code-keyword">do</span> World^[-1+x*(LimX+1),y]:=False;
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=-1 <span class="code-keyword">to</span> 320 <span class="code-keyword">do</span> NewWorld^[x,-1+y*(LimY+1)]:=False;
+  <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=-1 <span class="code-keyword">to</span> 200 <span class="code-keyword">do</span> NewWorld^[-1+x*(LimX+1),y]:=False;
+  <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> LimX-1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> LimY-1 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Random(2)=0 <span class="code-keyword">then</span> World^[x,y]:=True <span class="code-keyword">else</span> World^[x,y]:=False;
+  <span class="code-keyword">Repeat</span>
+    <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> LimX-1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> LimY-1 <span class="code-keyword">do</span> <span class="code-keyword">if</span> World^[x,y] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> CountPeople(x,y) in [2,3] <span class="code-keyword">then</span> NewWorld^[x,y]:=True <span class="code-keyword">else</span> NewWorld^[x,y]:=False;
+    <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> CountPeople(x,y)=3 <span class="code-keyword">then</span> NewWorld^[x,y]:=True <span class="code-keyword">else</span> NewWorld^[x,y]:=False;
+    <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> LimX-1 <span class="code-keyword">do</span> Move(NewWorld^[x,0],World^[x,0],LimY);
+    <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> LimX-1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> LimY-1 <span class="code-keyword">do</span> Bouffeur^[y+100-(LimY <span class="code-keyword">div</span> 2),x+160-(LimX <span class="code-keyword">div</span> 2)]:=
+      Timer+ColorTab[x]+Ord(World^[x,y])*128-Ord(ColorTab[x]+Timer&gt;127)*127;
+    Affiche;
+    Inc(Timer);
+    <span class="code-keyword">if</span> Timer=128 <span class="code-keyword">then</span> Timer:=0;
+  <span class="code-keyword">Until</span> KeyPressed;
+  Dispose(World);
+  Dispose(NewWorld);
+  Dispose(Bouffeur);
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>
