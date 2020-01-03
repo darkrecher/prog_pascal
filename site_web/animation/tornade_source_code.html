@@ -1,0 +1,156 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=tornade">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Tornade - Code source</h1>
+
+  <div>
+    <a href="tornade.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    Comme Sky, mais avec des carrés bleus qui dessinent une espèce de tornade.
+    Bla
+    <br><br>
+    Blou
+    <br><br>
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">Uses</span> Crt,Dos;
+
+<span class="code-keyword">Type</span>
+  Screen=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  PElement=^TElement;
+  Telement=Screen;
+
+<span class="code-keyword">Var</span>
+  Video,Bouffeur:PElement;
+  x,y,ScreenX1,ScreenX2,ScreenY1,ScreenY2:Integer;
+  Timer:Integer;
+
+<span class="code-keyword">Procedure</span> MegaScreen;
+<span class="code-keyword">var</span> x,y:integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    <span class="code-assembler">Mov AH,$0000;
+    Mov AL,$0013;
+    Int $10;</span>
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:$0000]);
+  New(Bouffeur);
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Video^[y,x]:=191;
+    Bouffeur^[y,x]:=191;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Affiche;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=ScreenY1 <span class="code-keyword">to</span> ScreenY2 <span class="code-keyword">do</span> Move(Bouffeur^[i,ScreenX1],Video^[i,ScreenX1],ScreenX2-ScreenX1+1);
+  ScreenX1:=319;
+  ScreenX2:=0;
+  ScreenY1:=199;
+  ScreenY2:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Draw(x1,y1,x2,y2:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ScreenX1&gt;x1 <span class="code-keyword">then</span> ScreenX1:=x1;
+  <span class="code-keyword">if</span> ScreenX2&lt;x2 <span class="code-keyword">then</span> ScreenX2:=x2;
+  <span class="code-keyword">if</span> ScreenY1&gt;y1 <span class="code-keyword">then</span> ScreenY1:=y1;
+  <span class="code-keyword">if</span> ScreenY2&lt;y2 <span class="code-keyword">then</span> ScreenY2:=y2;
+  <span class="code-keyword">if</span> ScreenX1&lt;0 <span class="code-keyword">then</span> ScreenX1:=0;
+  <span class="code-keyword">if</span> ScreenX2&gt;319 <span class="code-keyword">then</span> ScreenX2:=319;
+  <span class="code-keyword">if</span> ScreenY1&lt;0 <span class="code-keyword">then</span> ScreenY1:=0;
+  <span class="code-keyword">if</span> ScreenY2&gt;199 <span class="code-keyword">then</span> ScreenY2:=199;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefinePal4;
+<span class="code-keyword">var</span> i:Byte;Pal:<span class="code-keyword">Array</span>[0..255,0..2] <span class="code-keyword">of</span> Byte;Reg:Registers;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 63 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Pal[i,0]:=i;
+    Pal[i,1]:=i;
+    Pal[i,2]:=i;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=64 <span class="code-keyword">to</span> 127 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Pal[i,0]:=63-i;
+    Pal[i,1]:=63-i;
+    Pal[i,2]:=63;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=128 <span class="code-keyword">to</span> 191 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Pal[i,0]:=0;
+    Pal[i,1]:=0;
+    Pal[i,2]:=63-i;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=192 <span class="code-keyword">to</span> 223 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Pal[i,0]:=i-192;
+    Pal[i,1]:=0;
+    Pal[i,2]:=0;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=224 <span class="code-keyword">to</span> 255 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Pal[i,0]:=255-i;
+    Pal[i,1]:=0;
+    Pal[i,2]:=0;
+  <span class="code-keyword">end</span>;
+  Reg.AH:=$0010;
+  Reg.AL:=$0012;
+  Reg.BX:=$0000;
+  Reg.CX:=$0100;
+  Reg.ES:=Seg(Pal);
+  Reg.DX:=Ofs(Pal);
+  Intr($10,Reg);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DrawSquare(x,y:Integer);
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 9 <span class="code-keyword">do</span> FillChar(Bouffeur^[y+i,x],10,128);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  MegaScreen;
+  DefinePal4;
+  Randomize;
+  Timer:=0;
+  <span class="code-keyword">While</span> keypressed <span class="code-keyword">do</span> Readkey;
+  <span class="code-keyword">Repeat</span>
+    Draw(0,0,319,199);
+    Affiche;
+    Inc(Timer);
+    <span class="code-keyword">for</span> x:=1 <span class="code-keyword">to</span> 318 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=1 <span class="code-keyword">to</span> 198 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Bouffeur^[y,x]:=(Video^[y+1,x]+Video^[y-1,x]+Video^[y,x+1]+Video^[y,x-1]+Video^[y,x]) <span class="code-keyword">div</span> 5-1;
+    <span class="code-keyword">end</span>;
+    DrawSquare(Round(cos(Timer)*Timer+160),Round(Sin(Timer)*Timer)+100);
+    <span class="code-keyword">if</span> Timer=102 <span class="code-keyword">then</span> Timer:=0;
+  <span class="code-keyword">Until</span> keypressed;
+  Dispose(Bouffeur);
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>

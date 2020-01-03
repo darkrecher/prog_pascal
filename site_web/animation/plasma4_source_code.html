@@ -1,0 +1,233 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=plasma4">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Plasma4 - Code source</h1>
+
+  <div>
+    <a href="plasma4.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    C'est comme l'animation "Plasma3", sauf qu'il y a deux plasmas superposés, un rouge et un bleu. On change l'un, puis l'autre, puis re-l'un, etc. Il n'y a que 16 niveaux de couleurs pour chaque plasma, car il faut pouvoir afficher toutes les combinaisons possibles de bleu et de rouge. Ça fait donc 16*16 = 256 couleurs.
+    <br><br>
+    Le message initial est un peu déroutant. Il explique que l'anim est lente (alors qu'elle ne l'est pas plus que les autres), mais ne dit pas qu'il faut appuyer sur une touche pour démarrer.
+    <br><br>
+    On risque donc de se retrouver dans une situation idiote, où on attend sans appuyer sur une touche. Et comme on est prévenu que c'est lent, on fait l'effort d'attendre super longtemps. Et ça ne démarre jamais. J'ai été un peu crétin d'avoir mis ce message. Désolé. En fait c'est le temps d'initialisation de tout le bazar initial (le mode graphique, la mémoire, les deux premiers plasmas, etc.) qui m'inquiétait un peu.
+    <br><br><br>
+    Dans le code, vous remarquerez que certains tableaux ont les coordonnées X et Y inversées, ce qui donne des lignes de ce genre : "Map^[Y,X]:=Color;". Cette inversion se retrouve également dans beaucoup de mes autres programmes.
+    <br><br>
+    Ça se justifie lorsque les tableaux sont des buffers de pixels, et qu'on a besoin de les copier intégralement entre eux, ou bien vers la mémoire vidéo. Ce sont des "arrays of arrays". Chaque sous-array représente une ligne de pixels. Lorsqu'on veut y accéder, on doit d'abord donner l'indice de l'array principal (le Y), puis celui du sous-array (le X). Ça donne ceci : "Screen[Y][X] := Color", qui s'écrit également sous la forme "Screen[Y,X] := Color".
+    <br><br>
+    Mais dans le cas de cette anim, ça ne se justifie pas spécialement. Car de toutes façons, il faut transférer les pixels un par un dans la mémoire vidéo, à cause du calcul pour mixer les quantités de rouge et de bleu. Les tableaux TMap/PMap auraient donc dû être indiqués avec un ordre de coordonnées normal : d'abord X puis Y.
+    <br><br>
+    C'est d'autant plus grave que le tableau "Pixeled", indiquant les pixels déjà traités pour le calcul du plasma en cours, a un ordre de coordonnées normal. On n'est même pas homogène entre les tableaux ! Je m'excuse encore et toujours pour cette gabegie programmatoire.
+    <br><br><br>
+    Dernière petite horriblitude de code. Cette ligne :
+    <br>
+    Inc(Color,Random(DistX*Zoom div divZoom+1)-DistX*Zoom div (2*DivZoom));
+    <br><br>
+    On n'y pige rien, alors que ça fait un truc tout simple : La variable Color possède une certaine valeur. On change un peu cette valeur (en positif ou en négatif), de manière aléatoire.
+    <br>
+    Ça aurait franchement pas été du luxe d'ajouter quelques petites variables intermédiaires pour expliquer ce qu'on fait.
+    <br><br>
+    RandAmplitude := DistX*Zoom div divZoom;
+    <br>
+    ColorRandoming := Random(RandAmplitude+1) - RandAmplitude div 2;
+    <br>
+    Inc(Color, ColorRandoming);
+    <br><br>
+    Mais on n'est plus à ça près. Et sinon, pour info, cette histoire de Zoom et de divZoom sert à avoir des plasmas plus ou moins aléatoires. Lorsque c'est aléatoire, ça varie beaucoup, et on a l'impression qu'on voit un grand plasma de loin. Quand ça varie moins, on a l'impression qu'on voit un plasma de plus près. Du coup j'ai appelé mes variables "Zoom", mais c'est un peu alambiqué comme nommage.
+    <br><br><br>
+    Lorsque j'ai terminé cette anim, j'ai regretté de n'avoir que 256 couleurs. J'aurais voulu faire 3 plasmas superposés : rouge, vert, bleu. Mais pour faire toutes les combinaisons possibles, je n'aurais eu que 6 niveaux de couleurs pour chaque plasma. 6*6*6 = 216. 7*7*7 = 343, trop grand car on dépasse 256.
+    <br><br>
+    Quelques années plus tard, j'étais en stage ST40 pour mes études à l'UTBM. Un soir, j'étais tout seul dans ma piaule d'un foyer de jeunes travailleurs et je me faisais un peu chier. J'avais un ordinateur un peu plus puissant : un Pentium 3 450Mhz, qui pouvait très facilement afficher 16 millions de couleurs. J'ai codé un triple-plasma superposé. Mais je n'aurais pas su le faire en Pascal, alors je l'ai fait avec une putain de nom de dieu de macro Excel Visual Basic for Applications.
+    <br><br>
+    La macro générait des mini-carrés dans la feuille Excel, le même genre de carrés qu'on utilise pour faire des schémas et des dessins. Chacun d'eux représentait un pixel de mon plasma, il y en avait donc beaucoup-beaucoup. C'était n'importe quoi. La génération et l'affichage final a pris une bonne vingtaine de minutes. Et pas question d'animer quoi que ce soit ou de faire des transitions entre plusieurs plasmas. Mais ça a marché, j'avais mon image de triple-plasma superposés.
+    <br><br>
+    Je n'ai pas gardé le code de cette macro Excel. Tant pis !
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">uses</span> MCGAGraf,Crt;
+
+<span class="code-keyword">type</span>
+  PPixeled=^TPixeled;
+  TPixeled=<span class="code-keyword">Array</span>[0..256,0..128] <span class="code-keyword">of</span> Boolean;
+  PMap=^TMap;
+  TMap=<span class="code-keyword">Array</span>[0..128,0..256] <span class="code-keyword">of</span> Byte;
+
+  <span class="code-keyword">var</span>
+  Zoom,DivZoom:Byte;
+  i,j:Integer;
+  Pixeled:PPixeled;
+  C:Char;
+  Stop:Boolean;
+  RedBuf,RedScr,BlueBuf,BlueScr:PMap;
+
+<span class="code-keyword">Procedure</span> PlasmaPixel(X,Y,DistX,DistY:Integer;Map:PMap);
+<span class="code-keyword">var</span> Color:Integer;Diviseur:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> Pixeled^[X,Y]=False <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Diviseur:=0;
+    Color:=0;
+    <span class="code-keyword">if</span> (X&gt;0) <span class="code-keyword">and</span> (X&lt;256) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> (Y&gt;0) <span class="code-keyword">and</span> (Y&lt;128) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Pixeled^[X-DistX,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X+DistX,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Color:=Map^[Y-DistY,X-DistX];
+          Inc(Color,Map^[Y+DistY,X+DistX]);
+          Diviseur:=2;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> Pixeled^[X+DistX,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X-DistX,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Color,Map^[Y-DistY,X+DistX]);
+          Inc(Color,Map^[Y+DistY,X-DistX]);
+          Inc(Diviseur,2);
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Pixeled^[X+DistX,Y] <span class="code-keyword">and</span> Pixeled^[X-DistX,Y] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Color,Map^[Y,X+DistX]);
+          Inc(Color,Map^[Y,X-DistX]);
+          Inc(Diviseur,2);
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> (Y&gt;0) <span class="code-keyword">and</span> (Y&lt;128) <span class="code-keyword">then</span> <span class="code-keyword">if</span> Pixeled^[X,Y-DistY] <span class="code-keyword">and</span> Pixeled^[X,Y+DistY] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(Color,Map^[Y-DistY,X]);
+      Inc(Color,Map^[Y+DistY,X]);
+      Inc(Diviseur,2);
+    <span class="code-keyword">end</span>;
+    Color:=Color <span class="code-keyword">div</span> Diviseur;
+    Inc(Color,Random(DistX*Zoom <span class="code-keyword">div</span> divZoom+1)-DistX*Zoom <span class="code-keyword">div</span> (2*DivZoom));
+    <span class="code-keyword">if</span> Color&lt;0 <span class="code-keyword">then</span> Color:=0;
+    <span class="code-keyword">if</span> Color&gt;15 <span class="code-keyword">then</span> Color:=15;
+    Map^[Y,X]:=Color;
+    Pixeled^[X,Y]:=True;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Quadrillage(DistX,DistY:Integer;Map:PMap);
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">div</span> DistY <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">div</span> DistX <span class="code-keyword">do</span> PlasmaPixel(i*DistX,j*DistY,DistX,DistY,Map);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Plasma(Map:PMap);
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> Pixeled^[i,j]:=False;
+  Map^[0,0]:=Random(16);
+  Map^[0,256]:=Random(16);
+  Map^[128,0]:=Random(16);
+  Map^[128,256]:=Random(16);
+  Pixeled^[0,0]:=True;
+  Pixeled^[0,128]:=True;
+  Pixeled^[256,0]:=True;
+  Pixeled^[256,128]:=True;
+  j:=128;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 6 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Quadrillage(j,j <span class="code-keyword">div</span> 2,Map);
+    j:=j <span class="code-keyword">div</span> 2;
+  <span class="code-keyword">end</span>;
+  Quadrillage(1,1,Map);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Display(Blue,Red:PMap);
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> Video^[i+35,j+31]:=Blue^[i,j] <span class="code-keyword">shl</span> 4+Red^[i,j];
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Function</span> Fondu(Source,Dest:PMap):Boolean;
+<span class="code-keyword">var</span> i,j:Integer;Result:Boolean;ValSource,ValDest:Byte;
+<span class="code-keyword">begin</span>
+  Result:=True;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    ValSource:=Source^[j,i];
+    ValDest:=Dest^[j,i];
+    <span class="code-keyword">if</span> ValDest&gt;ValSource <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Dec(Dest^[j,i]);
+      Result:=False;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> ValDest&lt;ValSource <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(Dest^[j,i]);
+      Result:=False;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Fondu:=Result;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Animate(Buf,Screen:PMap);
+<span class="code-keyword">begin</span>
+  Zoom:=Random(5)+1;
+  DivZoom:=Random(5)+1;
+  Plasma(Buf);
+  <span class="code-keyword">Repeat</span>
+    Display(BlueScr,RedScr);
+    Delay(50);
+  <span class="code-keyword">Until</span> Fondu(Buf,Screen) or keypressed;
+  <span class="code-keyword">if</span> keypressed <span class="code-keyword">then</span> Stop:=True;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  ClrsCr;
+  WriteLn('C''est joli, mais c''est un peu lent!!');
+  WriteLn('Alors s''il vous plait, ne quittez pas au bout de 5 secondes');
+  WriteLn('soyez patient');
+  Readkey;
+  MCGAScreen;
+  Randomize;
+  New(Pixeled);
+  New(BlueBuf);
+  New(RedBuf);
+  New(BlueScr);
+  New(RedScr);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 256 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 128 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    RedScr^[j,i]:=0;
+    BlueScr^[j,i]:=0;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 15 <span class="code-keyword">do</span> Degrade(i*16,i*4,0,0,i*16+15,i*4+3,0,63);
+  DefinePal;
+  Zoom:=Random(5)+1;
+  DivZoom:=Random(5)+1;
+  <span class="code-keyword">While</span> keypressed <span class="code-keyword">do</span> Readkey;
+  Stop:=False;
+
+  <span class="code-keyword">Repeat</span>
+    Animate(BlueBuf,BlueScr);
+    Animate(RedBuf,RedScr);
+  <span class="code-keyword">Until</span> Stop;
+
+  CloseScreen;
+  Dispose(Pixeled);
+  Dispose(BlueBuf);
+  Dispose(RedBuf);
+  Dispose(BlueScr);
+  Dispose(RedScr);
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>
