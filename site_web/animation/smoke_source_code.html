@@ -1,0 +1,216 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=smoke">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Smoke - Code source</h1>
+
+  <div>
+    <a href="smoke.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    Une toute petite animation affichant une toute petite fumée.
+    <br><br>
+    La majeure partie de l'algo se trouve dans la fonction "CreateFlame", elle est récursive. Le but de cette anim était de jouer un peu avec la notion de récursivité.
+    <br><br>
+    Ça aurait pu être presque visuellement appréciable si j'avais fait une palette de couleurs pas torturée. Le problème, c'est que la fumée va vers la couleur noire, et d'un seul coup elle passe à la couleur blanche, sur une autre teinte de base. Il aurait fallu mettre un seul dégradé dans la palette, et le changer en temps réel, pour aller progressivement vers une autre teinte. Bref, c'est assez horrible à regarder.
+    <br><br><br>
+    Le code contient diverses choses étranges.
+    <br>
+     - Le nom de variable en franglais "ColorOfDepart".
+    <br>
+     - La fonction "InferieurA223".
+    <br>
+     - Une fonction "Random", mise en commentaire. Probablement une tentative plus ou moins fructueuse de recoder cette fonction de base du Pascal, car je trouvais l'originale trop lente.
+    <br><br>
+    Il y a aussi une redéfinition de l'interruption "1C". Cette interruption est exécutée à chaque tic d'horloge. Pour plus de détails : <a href="https://www.gladir.com/LEXIQUE/INTR/int1c.htm">https://www.gladir.com/LEXIQUE/INTR/int1c.htm</a>.
+    <br><br>
+    Je ne sais plus pourquoi j'ai fait ça. Ça aurait été tellement plus simple de mettre un Delay. Il y a eu cette histoire de Delay qui faisait planter le Turbo Pascal sur des ordinateurs plus récents (j'en ai parlé dans une autre animation, je vous laisse retrouver laquelle). Mais ça justifie pas de recoder soi-même le Delay. Mystère...
+    <br><br>
+    Oh, et sinon je vous invite à explorer un peu plus le site "gladir.com" (lien ci-dessus). C'est trop marrant. C'est une source abondante d'infos et de références qui peuvent être très utiles, mais présentées comme un site web des années 1980, avec des fautes d'orthographe dedans. D'après la rubrique "Salles de presse" (ça veut dire : "les news"), la dernière mise à jour date d'environ un an, le site existe depuis 18 ans, et semble être maintenu par une seule personne. C'est un truc de malade. J'ai cette impression étrange que le type qui a fait ça a travaillé comme un dingue, et ensuite, il a travaillé encore plus comme un dingue pour recouvrir de caca tout son travail. Le recouvrement cacateux est hyper bien fait, il y a passé du temps, il a bien vérifié qu'aucun centimètre carré initial n'était visible, il a passé une raclette pour que le caca soit uniforme, il l'humidifie régulièrement et remet une petite couche pour être sûr que ça reste frais et odoriférant. Et en même temps, il continue de faire son super-travail initial, sans oublier de recouvrir de caca les éléments qu'il ajoute au fur et à mesure.
+    <br><br>
+    Peut-être que c'est exactement ce que je fais avec ce site regroupant mes programmes en Pascal.
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">Uses</span> Crt,Dos;
+
+<span class="code-keyword">Type</span>
+  Screen=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  PElement=^TElement;
+  Telement=Screen;
+
+<span class="code-keyword">Var</span>
+  Pal:<span class="code-keyword">Array</span>[0..255,0..2] <span class="code-keyword">of</span> Byte;
+  Video,Bouffeur:PElement;
+  x,y:Integer;
+  ScreenX1,ScreenX2,ScreenY1,ScreenY2:Integer;
+  Reg:Registers;
+  ColorOfDepart:Byte;
+
+<span class="code-keyword">Const</span>
+  Flag:Byte=0;
+
+<span class="code-keyword">Procedure</span> NewInt8;Interrupt;
+<span class="code-keyword">begin</span>
+  Inc(Flag);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> MegaScreen;
+<span class="code-keyword">var</span> x,y:integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    Mov AH,$0000;
+    Mov AL,$0013;
+    Int $10;
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:$0000]);
+  New(Bouffeur);
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Video^[y,x]:=0;
+    Bouffeur^[y,x]:=0;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> CloseScreen;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    Mov AH,$0000;
+    Mov AL,$003;
+    Int $10;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Affiche;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=ScreenY1 <span class="code-keyword">to</span> ScreenY2 <span class="code-keyword">do</span> Move(Bouffeur^[i,ScreenX1],Video^[i,ScreenX1],ScreenX2-ScreenX1+1);
+  ScreenX1:=319;
+  ScreenX2:=0;
+  ScreenY1:=199;
+  ScreenY2:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Draw(x1,y1,x2,y2:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ScreenX1&gt;x1 <span class="code-keyword">then</span> ScreenX1:=x1;
+  <span class="code-keyword">if</span> ScreenX2&lt;x2 <span class="code-keyword">then</span> ScreenX2:=x2;
+  <span class="code-keyword">if</span> ScreenY1&gt;y1 <span class="code-keyword">then</span> ScreenY1:=y1;
+  <span class="code-keyword">if</span> ScreenY2&lt;y2 <span class="code-keyword">then</span> ScreenY2:=y2;
+  <span class="code-keyword">if</span> ScreenX1&lt;0 <span class="code-keyword">then</span> ScreenX1:=0;
+  <span class="code-keyword">if</span> ScreenX2&gt;319 <span class="code-keyword">then</span> ScreenX2:=319;
+  <span class="code-keyword">if</span> ScreenY1&lt;0 <span class="code-keyword">then</span> ScreenY1:=0;
+  <span class="code-keyword">if</span> ScreenY2&gt;199 <span class="code-keyword">then</span> ScreenY2:=199;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefinePal;
+<span class="code-keyword">var</span> i,j:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 6 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> 16 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> <span class="code-keyword">not</span>(Odd(j)) <span class="code-keyword">then</span> Pal[j*32+i+31,0]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+31,0]:=0;
+      <span class="code-keyword">if</span> (j <span class="code-keyword">mod</span> 4=1) or (j <span class="code-keyword">mod</span> 4=2) <span class="code-keyword">then</span> Pal[j*32+i+31,1]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+31,1]:=0;
+      <span class="code-keyword">if</span> J&gt;2 <span class="code-keyword">then</span> Pal[j*32+i+31,2]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+31,2]:=0;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> 16 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> (Odd(j)) <span class="code-keyword">then</span> Pal[j*32+i+47,0]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+47,0]:=63;
+      <span class="code-keyword">if</span> (j <span class="code-keyword">mod</span> 4=3) or (j <span class="code-keyword">mod</span> 4=0) <span class="code-keyword">then</span> Pal[j*32+i+47,1]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+47,1]:=63;
+      <span class="code-keyword">if</span> J&lt;=2 <span class="code-keyword">then</span> Pal[j*32+i+47,2]:=i*4-1 <span class="code-keyword">else</span> Pal[j*32+i+47,2]:=63;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Pal[15,0]:=40;
+  Pal[15,1]:=40;
+  Pal[15,2]:=40;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span> Base:Word;
+
+<span class="code-comment">{Function Random(N:Word):Word;
+begin
+  asm
+    mov ax,Base
+    ror ax,1
+    xor Base,ax
+    inc Base
+  end;
+  Random:=Base mod N;
+end;}</span>
+
+<span class="code-keyword">Function</span> InferieurA223(x:Byte):Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> x&lt;223 <span class="code-keyword">then</span> InferieurA223:=x <span class="code-keyword">else</span> InferieurA223:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> CreateFlame(X,Y:Integer;Color:Byte);
+<span class="code-keyword">begin</span>
+  Bouffeur^[Y,X]:=Color;
+  <span class="code-keyword">if</span> Color&gt;InferieurA223(ColorOfDepart-32) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    CreateFlame(X,Y-1,Color-Random(5)-1);
+    <span class="code-keyword">if</span> Random(2)=0 <span class="code-keyword">then</span> CreateFlame(X-1,Y-1,Color-Random(5)-1);
+    <span class="code-keyword">if</span> Random(2)=0 <span class="code-keyword">then</span> CreateFlame(X+1,Y-1,Color-Random(5)-1);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DarkSquare(x1,y1,x2,y2:Integer);
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=y1 <span class="code-keyword">to</span> y2 <span class="code-keyword">do</span> FillChar(Bouffeur^[i,x1],x2-x1+1,0);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  OldInt8:Pointer;
+
+<span class="code-keyword">begin</span>
+  GetIntVec($1C,OldInt8);
+  SetIntVec($1C,@NewInt8);
+  MegaScreen;
+  Randomize;
+  Base:=System.Random(65535);
+  DefinePal;
+  Reg.AH:=$0010;
+  Reg.AL:=$0012;
+  Reg.BX:=$0000;
+  Reg.CX:=$0100;
+  Reg.ES:=Seg(Pal);
+  Reg.DX:=Ofs(Pal);
+  Intr($10,Reg);
+  ColorOfDepart:=95;
+  <span class="code-keyword">While</span> KeyPressed <span class="code-keyword">do</span> Readkey;
+  <span class="code-keyword">Repeat</span>
+    <span class="code-keyword">Repeat</span> <span class="code-keyword">Until</span> Flag&gt;=3;
+    DarkSquare(15,15,85,50);
+    CreateFlame(50,50,ColorOfDepart);
+    Inc(ColorOfDepart);
+    Draw(15,15,85,50);
+    Affiche;
+    Flag:=0;
+  <span class="code-keyword">Until</span> keypressed;
+  CloseScreen;
+  SetIntVec($1C,OldInt8);
+<span class="code-keyword">end</span>.
+</pre>
+
+  </div>
+
+</body>
+
+</html>
