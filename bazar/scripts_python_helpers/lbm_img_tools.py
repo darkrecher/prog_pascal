@@ -1,9 +1,10 @@
 from create_bmp_file import Bitmap
 
 
-def color_indexes_from_lbm_chunk(bytes_lbm_block, cursor=0, verbose=True):
+
+def color_indexes_from_lbm_chunk(bytes_lbm_block, cursor=0, verbose=True, must_check=False):
     """
-    Blabla.
+        Blabla.
     Les 4 premiers octets indiquent la taille du bloc.
     Et ensuite on a tout le bloc.
     """
@@ -24,9 +25,10 @@ def color_indexes_from_lbm_chunk(bytes_lbm_block, cursor=0, verbose=True):
     block_data += list(map(int, bytes_lbm_block[cursor:cursor+block_size]))
     cursor += block_size
 
-    if cursor != len(bytes_lbm_block):
-        msg = "Taille de bloc indiqué (%s) différente de la taille de bloc réelle (%s)."
-        raise Exception(msg % (cursor, len(bytes_lbm_block)))
+    if must_check:
+        if cursor != len(bytes_lbm_block):
+            msg = "Taille de bloc indiqué (%s) différente de la taille de bloc réelle (%s)."
+            raise Exception(msg % (cursor, len(bytes_lbm_block)))
 
     color_indexes = []
     while block_data:
@@ -75,3 +77,110 @@ def palette_from_lbm_data(bytes_lbm_block, cursor=0, verbose=True):
     ])
     return palette
 
+
+def cmap_body_from_lbm_file(filepath_lbm):
+
+    # Gros bourrin. Osef.
+    all_data = open(filepath_lbm, "rb").read()
+    print(all_data[:100])
+    # FORM\x00\x00jvPBM BMHD\x00\x00\x00\x14\x01@\x00\xc8\x00\x00\x00\x00\x08\x00\x01\x00\x00\x00\x05\x06\x01@\x00\xc8CMAP\
+
+    cursor = 0
+    initial_name = str(all_data[cursor:cursor + 4], encoding="ascii", errors="replace")
+    print(initial_name)
+    cursor += 4
+
+    # TODO : duplicate code.
+    block_size = list(map(int, all_data[cursor:cursor + 4]))
+    cursor += 4
+
+    # TODO : Pourquoi là c'est à l'envers [::-1] et pas dans la fonction d'avant ?
+    block_size = sum([
+        byte*(256**offset)
+        for byte, offset
+        in zip(block_size[::-1], range(4))
+    ])
+    print("size : ", block_size) # taille du fichier -8
+    total_size = block_size
+
+    other_name = str(all_data[cursor:cursor + 4], encoding="ascii", errors="replace")
+    print(other_name)
+    cursor += 4
+
+    # Ensuite, à priori, on rentre dans une bouboucle.
+
+    while cursor < total_size:
+
+        current_name = str(all_data[cursor:cursor + 4], encoding="ascii", errors="replace")
+        print(current_name)
+        cursor += 4
+
+        block_size = list(map(int, all_data[cursor:cursor + 4]))
+        cursor += 4
+
+        # TODO : Pourquoi là c'est à l'envers [::-1] et pas dans la fonction d'avant ?
+        block_size = sum([
+            byte*(256**offset)
+            for byte, offset
+            in zip(block_size[::-1], range(4))
+        ])
+        print("size : ", block_size)
+
+        if current_name == "BODY":
+            body_data = all_data[cursor-4:cursor + block_size + block_size % 2]
+        elif current_name == "CMAP":
+            cmap_data = all_data[cursor:cursor + block_size + block_size % 2]
+
+
+        cursor += block_size + block_size % 2
+
+    ## TODO : crap
+    """
+    current_name = str(all_data[cursor:cursor + 4], encoding="ascii", errors="replace")
+    print(current_name)
+    cursor += 4
+
+    block_size = list(map(int, all_data[cursor:cursor + 4]))
+    cursor += 4
+
+    # TODO : Pourquoi là c'est à l'envers [::-1] et pas dans la fonction d'avant ?
+    block_size = sum([
+        byte*(256**offset)
+        for byte, offset
+        in zip(block_size[::-1], range(4))
+    ])
+    print("size : ", block_size)
+
+    cursor += block_size
+    """
+
+    palette = palette_from_lbm_data(cmap_data)
+    color_indexes = color_indexes_from_lbm_chunk(body_data)
+    #print(col_indexes)
+    #print(palette)
+
+    bmp_img = Bitmap(320, 200)
+    x_cursor = 0
+    y_cursor = 0
+    for color_index in color_indexes:
+        #rgb_value = [ (color_index*20) & 255 ] * 3
+        rgb_value = palette[color_index]
+        #rgb_value = [ (color_index*4) & 255 ] * 3
+        bmp_img.set_pixel(x_cursor, y_cursor, rgb_value)
+        x_cursor += 1
+        if x_cursor >= 320:
+            x_cursor = 0
+            y_cursor += 1
+
+    bmp_img.write("alpha4.bmp")
+    print("Fini.")
+
+
+
+# TODO crap
+def main():
+    cmap_body_from_lbm_file("..\\code_source_brut\\Games\\pong\\ALPHA4.LBM")
+
+
+if __name__ == "__main__":
+    main()
