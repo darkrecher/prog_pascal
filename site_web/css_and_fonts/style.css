@@ -64,6 +64,10 @@ h1 {
   height: 2em;
 }
 
+div.footer {
+  height: 15em;
+}
+
 .sourcecode {
   padding: 1em;
   background:#000080;
