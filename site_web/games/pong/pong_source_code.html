@@ -23,14 +23,64 @@
 
   <div>
     <a href="PONG.PAS">&gt; Télécharger le code source (encodage CP437)</a>
+    <br>
+    <a href="MCGAGRAF.PAS">&gt; Télécharger le code source de la librairie MCGAGRAF (encodage CP437)</a>
+    <br>
+    <a href="MOUSEREC.PAS">&gt; Télécharger le code source de la librairie MOUSEREC (encodage CP437)</a>
   </div>
 
+  <h2>Le jeu</h2>
+
   <p>
-    Bla
+    Tout le monde connaît Pong. Ma version a un tweak supplémentaire : on peut jouer jusqu'à 4, et chaque joueur peut avoir un ou plusieurs bords d'écran. Les scores sont calculés en conséquence. Un joueur qui ne rattrape pas la balle fait gagner 3 points à un joueur qui a 3 bords à gérer, mais n'en fait gagner qu'un seul à un joueur qui n'a qu'un seul bord à gérer.
     <br><br>
-    Blou
+    On peut aussi jouer à zéro joueurs, mais c'est stupide.
     <br><br>
+    Par contre, le fait de pouvoir renvoyer la balle dans 3 directions possibles lorsqu'on perd, ça casse un peu le jeu. On se retrouve parfois dans une situation où un premier joueurs peut renvoyer la balle à un endroit qu'un deuxième joueur ne peut pas atteindre assez rapidement. Du coup, le premier joueur fait perdre le deuxième. Et le deuxième joueur est lui aussi dans une situation où il peut renvoyer la balle à un endroit inatteignable. Il fait perdre le premier, qui refait perdre le deuxième, qui refait perdre le premier, et ainsi de suite.
+    <br><br>
+    J'étais quand même assez fier de ma gestion des rebondissements. Une partie du mouvement de la raquette est ajouté au mouvement de la balle. On peut la dévier ou la faire aller plus vite. Pour éviter que ça parte en cacahuète et que la balle aille trop vite, elle est un petit peu ralentie à chaque rebond (y compris contre les bords statiques). Je voulais faire mieux que tous les casse-briques pourris où la direction de la balle dépend de l'endroit où elle tape sur la raquette, alors que la raquette est toute plate. J'ai écrit tout un article de blog sur cet immense problème. Je vous laisse le retrouver dans mon fatras.
+    <br><br>
+    L'un de mes potes avait bien aimé ce jeu et avait tenté un gros match contre son frère. Ils s'étaient aperçu tous les deux que le comptage des points n'était pas équilibré. Un joueur ayant 3 bords devrait gagner, non pas 3 points à chaque fois, mais 6. Ou quelque chose du genre. En tout cas, j'étais assez heureux de voir que mes jeux pouvaient être intéressants au point que des personnes fassent des gros matchs avec. C'était une lointaine époque sans trop d'internet, où l'offre vidéoludique n'était pas aussi foisonnante. Zut, ça suffit la nostalgie.
+    <br><br>
+    Ce même pote m'avait confirmé que la gestion des rebondissements était cool. Il avait même sorti la phrase : "le moteur physique il est bien". Ha ha ha, "moteur physique", j'adore. Axolotl-Zomik, merci pour tes compliments et pour ton attention.
   </p>
+
+  <h2>Les images</h2>
+
+  <p>
+    Le fichier "ALPHA4.LBM" contient cette image :
+    <br>
+    <img src="alpha4.png">
+    <br><br>
+    C'est la police de caractère du texte initial. Elle a été créée par mon frère. Le format de fichier image "LBM" est celui du logiciel Deluxe Paint (on n'avait que ça à l'époque). Ce format est toujours lisible par des logiciels de dessins un peu plus complets que Paint.
+    <br><br>
+    Le fichier "PONG.IMG" contient cette image :
+    <br>
+    <img src="pong_img.png">
+    <br><br>
+    Il s'agit de l'image de présentation, réalisée par moi, à partir de vomi de licorne. Il s'agit d'un format de fichier "maison". On peut pas vraiment parler de format. Les couleurs des pixels sont écrites les unes après les autres dans le fichier. Les dimensions de l'image et la palette de couleur ne sont même pas intégrés dedans.
+    <br><br>
+    Le fichier "PONG.SPR" contient cette image :
+    <br>
+    <img src="pong_spr.png">
+    <br><br>
+    Car il me restait un peu de vomi de licorne. Le premier bidule vert correspond au curseur de définition de la vitesse du jeu. Le second, c'est la balle.
+    <br>
+    On reste sur le même non-format de fichier maison, sauf que les pixels des 5 images sont écrites les unes après les autres dans le fichiers. Si on ne connait pas à l'avance le nombre d'images et leurs dimensions respectives, on ne peut rien en faire. Mais vous pouvez trouver ça dans le code source.
+  </p>
+
+  <h2>Le texte au début du jeu</h2>
+
+  <p>
+    Comme dit dans le texte lui-même, c'est mon frère qui a codé le scrolling. Un pote à moi à qui j'apprenais à coder l'avait lui aussi récupéré pour l'un de ses jeux. Quand mon frère a vu ça, il a eu l'air un peu embêté. Il a dit : "je pensais pas que vous seriez tous à reprendre ce que j'ai fait". Sauf qu'on était pas "tous", on était "deux". J'ai rien à dire de plus à ce sujet.
+    <br>
+    L'un de mes potes avait apprécié le texte. (Pas le même pote que les deux d'avant).
+    <br>
+  </p>
+
+  <h2>Le code source</h2>
+
+  Bla
 
   <div class="sourcecode">
 

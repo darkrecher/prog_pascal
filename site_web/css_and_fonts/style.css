@@ -27,6 +27,10 @@ h1 {
   padding-top: 0.5em;
   text-align: center;
 }
+h2 {
+  font-weight: normal;
+  color: #FFFF00;
+}
 
 .program-list {
   font-size: 2em;
