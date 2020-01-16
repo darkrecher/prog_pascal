@@ -24,9 +24,13 @@
   <div>
     <a href="PONG.PAS">&gt; Télécharger le code source (encodage CP437)</a>
     <br>
-    <a href="MCGAGRAF.PAS">&gt; Télécharger le code source de la librairie MCGAGRAF (encodage CP437)</a>
+    <a href="../../libs_pascal/DOSFILE.PAS">&gt; Télécharger le code source de la librairie DOSFILE</a>
     <br>
-    <a href="MOUSEREC.PAS">&gt; Télécharger le code source de la librairie MOUSEREC (encodage CP437)</a>
+    <a href="../../libs_pascal/MCGAGRAF.PAS">&gt; Télécharger le code source de la librairie MCGAGRAF</a>
+    <br>
+    <a href="../../libs_pascal/MOUSEREC.PAS">&gt; Télécharger le code source de la librairie MOUSEREC</a>
+    <br>
+    <a href="../../libs_pascal/KEYBOARD.PAS">&gt; Télécharger le code source de la librairie KEYBOARD</a>
   </div>
 
   <h2>Le jeu</h2>
@@ -95,17 +99,1051 @@
     <br><br>
     Ce texte m'a remémoré l'état d'esprit dans lequel j'étais à l'époque. C'était plutôt joyeux et insouciant. De la créativité, des potes, des jeux de rôles, un amour à sens unique, une fille (qui n'est pas "HB") avec qui j'ai lié des liens d'amitié qui sont toujours là 20 ans après. Zut, ça suffit la nostalgie. À force, je vais devenir nostalgique du sentiment de nostalgie que je viens d'éprouver la veille.
     <br><br>
-    Oui, ça fait plusieurs jours que je suis sur ce texte. C'est comme ça.
+    Oui, ça fait plusieurs jours que je suis sur ce texte. C'est comme ça. Je suis un intermittent de la production de contenu web. Comme plein de gens en fait.
   </p>
 
   <h2>Le code source</h2>
 
-  Bla
+  <p>
+    Le code source du scrolling et celui du jeu sont dans le même fichier. J'ai fait un gros copié-collé de bourrin. J'aurais pu faire une unit (c'est comme ça qu'on appelle un module de code externe, en Pascal), mais non, je l'ai pas fait.
+    <br><br>
+    La fonction "ReadInt" et ses 5 parenthèses imbriquées est assez moche. C'est pas moi c'est mon frère.
+    <br><br>
+    La procédure "LoadLetters" est également assez étrange. Une gigantesque boucle parcourt toute l'image et recherche les pixels d'index 2 et 3, afin de repérer les lettres. À l'intérieur se trouve une autre boucle imbriquée, parcourant la même image, qui récupère l'image d'une lettre.
+    <br><br>
+    La procédure "SuperScrolling" découpe arbitrairement le texte en plusieurs parties. On ne peut pas faire autrement car les strings en Pascal ne peuvent pas excéder 255 caractères. Là où ça devient très moche, c'est quand cette procédure définit le premier tronçon de texte au tout début, et les tronçons suivants 30 lignes plus loin. Pour le coup, c'est pas mon frère, c'est moi. Même pas honte.
+    <br><br>
+    Admirez les noms de variables "OO, BA, GOCH, DROATT". Re même pas honte.
+    <br><br>
+    La fonction ToZero modifie un nombre pour le rapprocher de zéro. Quand il est positif, on le diminue, quand il est négatif, on l'augmente. Cette fonction est utilisée quelques lignes plus tard, avec pour second paramètre une valeur absolue. Ce second paramètre est une division du premier, il a donc toujours le même signe.
+    <br>
+    C'est à dire qu'on fait : X := ToZero(X, Abs(X / 10));
+    <br>
+    Alors qu'il aurait suffi d'écrire X := X - X / 10;
+    <br>
+    Stupide, n'est-ce pas ?
+    <br><br>
+    Et pour finir, la procédure "HandleBorder" contient le même code répété 4 fois. Une pour chaque bord par lequel la balle peut sortir. Ha ha ha.
+  </p>
 
   <div class="sourcecode">
 
 <pre>
-Du code en Pascal.
+<span class="code-keyword">Uses</span> Dos,DosFile,Crt,MCGaGraf,KeyBoard,Mouserec;
+
+<span class="code-comment">{--------------------LE SCROLLING------------------------------------------}</span>
+
+<span class="code-keyword">var</span>
+StopScrolling:Boolean;
+Text:string;
+
+<span class="code-keyword">const</span>
+<span class="code-comment">{    #0:quitter le programme
+     #1:vider la ligne
+     #2:attente 0.5 seconde
+     #3:début du texte à centrer
+     #4:fin du texte à centrer
+     #5:onduler
+     #6:arrêter ondulation
+     #7:vitesse lente
+     #8:vitesse normale
+     #9:vitesse rapide
+     #20:texte bleu
+     #21:rouge
+     #22:vert
+     #23:jaune
+     #24:gris
+     #25:beuark!
+}</span>
+  WaveLen=32;
+  WaveForm:<span class="code-keyword">Array</span>[0..WaveLen-1] <span class="code-keyword">of</span> Byte=(
+    0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0);
+  Width=320;
+  Height=28;
+  Margin=8;
+  XPos=(320-Width) <span class="code-keyword">div</span> 2;
+  YPos=(200-Height) <span class="code-keyword">div</span> 2;
+
+<span class="code-keyword">type</span>
+  PLetterImg=^TLetterImg;
+  TLetterImg=<span class="code-keyword">Array</span>[0..254,0..Height-1] <span class="code-keyword">of</span> Byte;
+  PImage=^TImage;
+  TImage=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  TPlain=<span class="code-keyword">Array</span>[0..63999] <span class="code-keyword">of</span> Byte;
+  TLetter=record
+    Img:PLetterImg;
+    Width:Byte;
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  Letters:<span class="code-keyword">Array</span>[32..255] <span class="code-keyword">of</span> TLetter;
+  Image:PImage;
+  Video:PImage;
+
+<span class="code-keyword">procedure</span> InitGraph;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">asm</span>
+    <span class="code-assembler">mov ax,$0013
+    int $10</span>
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:0]);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">procedure</span> CloseGraph;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">asm</span>
+    <span class="code-assembler">mov ax,$0003
+    int $10</span>
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">procedure</span> LoadImage;
+
+<span class="code-keyword">var</span> f:File;
+
+<span class="code-keyword">function</span> ReadName:String;
+<span class="code-keyword">var</span> s:String;
+<span class="code-keyword">begin</span>
+  s:='    ';
+  BlockRead(f,s[1],4);
+  ReadName:=s;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">function</span> ReadInt:LongInt;
+<span class="code-keyword">var</span> l:LongInt;b:<span class="code-keyword">Array</span>[0..3] <span class="code-keyword">of</span> Byte;
+<span class="code-keyword">begin</span>
+  l:=0;
+  BlockRead(f,b,4);
+  l:=(((((LongInt(b[0]) <span class="code-keyword">shl</span> 8)+LongInt(b[1])) <span class="code-keyword">shl</span> 8)+LongInt(b[2])) <span class="code-keyword">shl</span> 8)+LongInt(b[3]);
+  ReadInt:=l;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">const</span>
+  BufSize=4096;
+  BufPos:Integer=-1;
+<span class="code-keyword">var</span>
+  Buf:<span class="code-keyword">Array</span>[0..BufSize-1] <span class="code-keyword">of</span> Byte;
+
+<span class="code-keyword">function</span> ReadByte:Byte;
+<span class="code-keyword">var</span> w:Word;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> (BufPos=-1) or (BufPos&gt;=BufSize) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    BufPos:=0;
+    BlockRead(f,Buf,BufSize,w);
+  <span class="code-keyword">end</span>;
+  ReadByte:=Buf[BufPos];
+  Inc(BufPos);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  Index,Size:LongInt;
+  Name:String;
+  Palette:<span class="code-keyword">Array</span>[0..767] <span class="code-keyword">of</span> Byte;
+  i:Word;b:Byte;
+  Regs:Registers;
+
+<span class="code-keyword">begin</span>
+  Assign(f,'ALPHA4.LBM');
+  Reset(f,1);
+  ReadName;
+  Size:=ReadInt+8;
+  ReadName;
+  Index:=12;
+  <span class="code-keyword">repeat</span>
+    Seek(f,Index);
+    Name:=ReadName;
+    Index:=Index+ReadInt+8;
+    Index:=Index+(Index <span class="code-keyword">and</span> 1);
+    <span class="code-keyword">if</span> Name='CMAP' <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      BlockRead(f,Palette,768);
+      <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 767 <span class="code-keyword">do</span> Palette[i]:=Palette[i] <span class="code-keyword">shr</span> 2;
+      Regs.AX:=$1012;
+      Regs.BX:=$0000;
+      Regs.CX:=$0100;
+      Regs.ES:=Seg(Palette);
+      Regs.DX:=Ofs(Palette);
+      Intr($10,Regs);
+    <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> Name='BODY' <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      i:=0;
+      <span class="code-keyword">repeat</span>
+        b:=ReadByte;
+        <span class="code-keyword">if</span> b&gt;128 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          b:=257-b;
+          FillChar(TPlain(Image^)[i],b,ReadByte);
+          i:=i+b;
+        <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+          b:=b+1;
+          <span class="code-keyword">while</span> b&gt;0 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+            TPlain(Image^)[i]:=ReadByte;
+            Dec(b);
+            Inc(i);
+          <span class="code-keyword">end</span>;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">until</span> i&gt;=64000;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">until</span> Index&gt;=Size;
+  Close(f);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">procedure</span> LoadLetters;
+<span class="code-keyword">var</span> l,x,y,ix,iy:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> l:=32 <span class="code-keyword">to</span> 255 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Letters[l].Img:=nil;
+    Letters[l].Width:=0;
+  <span class="code-keyword">end</span>;
+  ix:=0;
+  iy:=0;
+  l:=32;
+  <span class="code-keyword">while</span> (iy&lt;200) <span class="code-keyword">and</span> (l&lt;256) <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> Image^[iy,ix]=3 <span class="code-keyword">then</span> <span class="code-keyword">with</span> Letters[l] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      Inc(ix);
+      <span class="code-keyword">while</span> (ix+Width&lt;320) <span class="code-keyword">and</span> (Image^[iy,ix+Width]&lt;&gt;2) <span class="code-keyword">do</span> Inc(Width);
+      <span class="code-keyword">if</span> Width&gt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        GetMem(Img,Height*Width);
+        <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> Height-1 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> Width-1 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+          Img^[x,y]:=Image^[iy-25+y,ix+x];
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+      Inc(l);
+      ix:=ix+Width;
+    <span class="code-keyword">end</span>;
+    Inc(ix);
+    <span class="code-keyword">if</span> ix&gt;=320 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(iy);
+      ix:=0;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">procedure</span> ShowBkGnd;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+<span class="code-comment">{  for i:=0 to 39 do begin
+    Move(Image^[i,0],Video^[YPos-6+i,XPos-8],12);
+    Move(Image^[i,12],Video^[YPos-6+i,XPos+Width-4],12);
+  end;}</span>
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{----------------------------------------------------------------------------}</span>
+
+<span class="code-keyword">var</span>
+  Buf:<span class="code-keyword">Array</span>[0..Height-1,0..Width+Margin-1] <span class="code-keyword">of</span> Byte;
+  Increment:Integer;
+
+<span class="code-keyword">const</span>
+  Center:Integer=0;
+  Wait:Word=0;
+  Clear:Integer=Width;
+  Quit:Boolean=False;
+  Wave:Boolean=False;
+  Color:Byte=32;
+  NextInc:Integer=2;
+
+<span class="code-keyword">function</span> InitChar(CharVal:Byte):Integer;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  i:=0;
+  <span class="code-keyword">case</span> Char(CharVal) <span class="code-keyword">of</span>
+   #32..#255:i:=Letters[CharVal].Width;
+   #0:Quit:=True;
+   #1:i:=Width-Clear+Margin;
+   #2:Wait:=25;
+   #3:Center:=0;
+   #4:i:=(Width-Center) <span class="code-keyword">div</span> 2+Margin;
+   #5:Wave:=True;
+   #6:Wave:=False;
+   #7:NextInc:=1;
+   #8:NextInc:=2;
+   #9:NextInc:=4;
+   #20:Color:=32;
+   #21:Color:=64;
+   #22:Color:=96;
+   #23:Color:=128;
+   #24:Color:=160;
+   #25:Color:=192;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> i&lt;0 <span class="code-keyword">then</span> InitChar:=0 <span class="code-keyword">else</span> InitChar:=i;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">procedure</span> DrawChar(CharVal:Byte;CharP:Integer;C:Integer);
+<span class="code-keyword">var</span> y:Integer;b:Byte;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> CharVal&gt;=32 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Clear:=0;
+    <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> Height-1 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      b:=Letters[CharVal].Img^[CharP,y];
+      <span class="code-keyword">if</span> b=0 <span class="code-keyword">then</span> Buf[y,Width+Margin-Increment+C]:=0
+             <span class="code-keyword">else</span> Buf[y,Width+Margin-Increment+C]:=(b <span class="code-keyword">and</span> 31) or Color;
+    <span class="code-keyword">end</span>;
+    Inc(Center);
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> Clear&lt;Width <span class="code-keyword">then</span> Inc(Clear);
+    <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> Height-1 <span class="code-keyword">do</span> Buf[y,Width+Margin-Increment+C]:=0;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span> y:Integer;
+    C:Byte;
+
+<span class="code-keyword">const</span>
+  TextP:Integer=0;
+  CharP:Integer=0;
+  CharR:Integer=0;
+
+<span class="code-keyword">var</span> CharVal:Byte;
+
+<span class="code-keyword">Procedure</span> SuperScrolling;
+<span class="code-keyword">var</span> Compteur:Byte;
+<span class="code-keyword">begin</span>
+  Compteur:=0;
+  Text:=' et voici enfin le retour tant attendu du jeu le plus con de toute la galaxie :'#1#3#22#5'pong!!!'#4#2#2#20+
+  'megatop non?   attendez, je vais arreter l''ondulation, j''ai le mal de mer       '#6#0;
+  <span class="code-keyword">if</span> Text&lt;&gt;'' <span class="code-keyword">then</span> <span class="code-keyword">repeat</span>
+    Increment:=NextInc;
+    <span class="code-keyword">if</span> Wait=0 <span class="code-keyword">then</span> Move(Buf[0,Increment],Buf[0,0],(Width+Margin)*Height-Increment);
+    <span class="code-keyword">if</span> Wait&gt;0 <span class="code-keyword">then</span> Dec(Wait);
+    <span class="code-keyword">for</span> C:=0 <span class="code-keyword">to</span> Increment-1 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">while</span> (Wait=0) <span class="code-keyword">and</span> (CharR=0) <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+        Inc(TextP);
+        <span class="code-keyword">if</span> TextP&gt;Length(Text) <span class="code-keyword">then</span> TextP:=1;
+        CharVal:=Ord(UpCase(Text[TextP]));
+        CharR:=InitChar(CharVal);
+        CharP:=0;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Wait=0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        DrawChar(CharVal,CharP,C);
+        Dec(CharR);
+        Inc(CharP);
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">repeat</span> <span class="code-keyword">until</span> (Port[$3DA] <span class="code-keyword">and</span> 8)=0;
+    <span class="code-keyword">repeat</span> <span class="code-keyword">until</span> (Port[$3DA] <span class="code-keyword">and</span> 8)&lt;&gt;0;
+    <span class="code-keyword">if</span> Wave <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> Height-1 <span class="code-keyword">do</span> Move(Buf[y,WaveForm[y <span class="code-keyword">mod</span> WaveLen]],Video^[YPos+y,XPos],Width);
+    <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> Height-1 <span class="code-keyword">do</span> Move(Buf[y],Video^[YPos+y,XPos],Width);
+    <span class="code-keyword">end</span>;
+    C:=WaveForm[WaveLen-1];
+    Move(WaveForm[0],WaveForm[1],SizeOf(WaveForm)-SizeOf(WaveForm[0]));
+    WaveForm[0]:=C;
+    <span class="code-keyword">if</span> KeyPressed <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      ReadKey;
+      StopScrolling:=True;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Quit <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">Case</span> Compteur <span class="code-keyword">of</span>
+       0:Text:=' ouf, ca va mieux.'#1'ce jeu a ete fait entierement par '#21'moi...'#20' sauf ce scrolling qui a ete fait par'+
+        ' mon frere.    vous allez voir c''est vraiment super genial comme jeu, on peut jouer jusqu''a 4 joueurs'#1#0;
+        1:Text:=' '#3'youpitralala!!!'#4#2#1'bon voila, le plus important est dit, le reste, c''est que des conneries, '+
+        'vous pouvez appuyer sur une touche maintenant'#1'remerciements a ma mere, mon pere, ma soeur et mes freres et '+
+        'toute ma famille'#0;
+        2:Text:=' mais j''ai pas la place de tous les citer, je remercie aussi mes potes et mes potesses que '+
+        'j''ai pas non plus la place de tous les citer'#1#0;
+        3:Text:=' '<span class="code-comment">{enormes remerciements a:'#1#21#3#4#2#5#2#2#6#2#1#20'}</span>+'et surtout, je'+
+        ' remercie...'#23'vous!'#20'  qui avez le courage d''executer ce jeu et de se farcir ce texte.'#1#0;
+        4:Text:=' '#9'wargrshniokfplkzgruuik!! yakalelo!'#1#8'charade:mon premier est une lettre de l''alphabet'+
+        ' et mon tout a une masse volumique de 10 tonnes par metre cube, je suis qui? je suis quoi?'#1#0;
+        5:Text:=' je suis monsieur '#21'r'#20'!!'#1'<span class="code-keyword">and</span> now, you will see the color <span class="code-keyword">of</span> the degueulis de mammouth     '#25+
+        'bou'#24'eua'#23'aar'#22'rrc'#21'kkk'#1#20'aah! ca va mieux!    vous etes toujours la?      '#0;
+        6:Text:=' et maintenant une page de publicite:'#1'acheter les cd de '#23'natacha atlas!!'#20'    '+
+        'mais c''est vrai c''est excellent comme musique!     et youpi!!'#1#0;
+        7:Text:=' eh vous avez deja ecoute skyrock le dimanche de 11h a minuit? c''est de la'+
+        ' giga-ultra-mega-supra-musique!! i love this!'#1#9#5'ouaaaaaaaayayayouyouyouyou!!'#1#6#8#0;
+        8:Text:=' ich habe eine interro <span class="code-keyword">of</span> deutsch tomorrow und my mother is persuaded que ich revise '+
+        'und ich kann nicht blairer the allemand!!'#1#0;
+        9:Text:=' '#9'oh'#8' '#9'r'#7'o'#9'b'#8'er'#7't'#9'!'#8'! '#9'q'#8'u'''#7'es'#8't'#7'-'#9'c'#7'e'#9' q'#8'u'#7'e'#8' '+
+        #9't'#8'u'#7' f'#9'o'#8'u'#9's '#7'a'#8'v'#7'e'#9'c '#8'l'#7'a'#9' '#8'ma'#7'n'#9'i'#8'v'#7'e'#9'l'#7'l'#9'e '+
+        #8'a'#8' '#7's'#8'cr'#9'o'#7'l'#8'l'#9'in'#7'g'#8'? ah! ca va mieux.'#1#0;
+        10:Text:=' je vais maintenant vous dicter tres distinctement le numero gagnant de la tombola:'+
+        'il s''agit du numero...843'#9'659846561365498463519783339'#1#8'ouais! germaine! on a gagne le grolo-grolo!!'#0;
+        11:Text:='       les nouvelles de la bourse:la mer monte!   alors achetez de l''eau!'#1+
+        'ahahahahaha!! je suis psychopathe!!!'#22'  ah bon? c''est votre vrai nom ou c''est un pseudonyme?    '#0;
+        12:Text:=' '#20' eh oui, c''est lourd!! mais c''est moi!!'#1+
+        'aaargh! ce scrolling est explose-z-yeux-tesque, vous trouvez pas?'#0;
+        13:Text:=' '#1#5#9'free at last!! free at last!!'#1#6#8'euh ouais c''est cool, allez une derniere:'+
+        '    je voudrais z''etre un fauteuil dans un salon de coiffure pour dames, pour que les fesses des'#0;
+        14:Text:=' belles ames se posent contre mon orgueil!       n''importe quoi! bon je vais '+
+        'me coucher.'#1'quelques jours plus tard:'#1'ca y est! ich habe fait meine controle <span class="code-keyword">of</span> allemand'#0;
+        15:Text:=' und ich habe a peu pres saved the meubles <span class="code-keyword">and</span> the moyenne aber now j''ai une foutue disserte '+
+        'de filosophie a rendre pour bientot et it takes me the head!! suite au prochain numero.'#1#0;
+        16:Text:=' bon, peut etre que vous avez envie de jouer, alors je vais m''arreter la, '+
+        'mais surtout, rappelez vous: votez pour r/eche\r grzmktbq!!'#1#0;
+        17:StopScrolling:=True;
+      <span class="code-keyword">end</span>;
+      Inc(Compteur);
+      Quit:=False;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">until</span> StopScrolling;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{----------------------LE JEU-----------------------------------------------}</span>
+
+<span class="code-keyword">Type</span>
+  Direction=(Bas,Gauche,Haut,Droite);
+  TBorder=Record
+    Lim1,Lim2,Y,Effect,Effect2:Integer;
+    X:LongInt;
+    Exists:Boolean;
+    Side:Direction;
+    Player:Byte;
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span>
+  DepX,DepY,Speed,BallY,i:Integer;
+  BallX:LongInt;
+  NbrPlayer:Byte;
+  BackToMenu,EndGame,Up,Down,Left,Right:Boolean;
+  Border:<span class="code-keyword">Array</span>[0..3] <span class="code-keyword">of</span> TBorder;
+  Score:<span class="code-keyword">Array</span>[1..4] <span class="code-keyword">of</span> Word;
+  PlayerExists:<span class="code-keyword">Array</span>[1..4] <span class="code-keyword">of</span> Boolean;
+  Cursor:<span class="code-keyword">Array</span>[0..8,0..4] <span class="code-keyword">of</span> Byte;
+  Sprite:<span class="code-keyword">Array</span>[0..4,0..4] <span class="code-keyword">of</span> Byte;
+  Rectangle:<span class="code-keyword">Array</span>[0..57,0..159] <span class="code-keyword">of</span> Byte;
+  ColorDegradeHoriz:<span class="code-keyword">Array</span>[0..319] <span class="code-keyword">of</span> Byte;
+  ColorDegradeVertic:<span class="code-keyword">Array</span>[0..199] <span class="code-keyword">of</span> Byte;
+
+<span class="code-keyword">Function</span> NewStr(Nbr:Integer):string;
+<span class="code-keyword">var</span> S:string;
+<span class="code-keyword">begin</span>
+  Str(Nbr,S);
+  NewStr:=S;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DrawMenu;
+<span class="code-keyword">var</span> Left:<span class="code-keyword">Array</span>[0..10,0..8] <span class="code-keyword">of</span> Byte;Corner:<span class="code-keyword">Array</span>[0..14,0..51] <span class="code-keyword">of</span> Byte;
+  <span class="code-keyword">Procedure</span> TakeSprite;
+  <span class="code-keyword">var</span> H:Handle;i:Integer;Buf:<span class="code-keyword">Array</span>[0..10228] <span class="code-keyword">of</span> Byte;
+  <span class="code-keyword">begin</span>
+    FOpen(H,'pong.spr');
+    FRead(H,Buf[0],10229);
+    FClose(H);
+    Move(Buf[0],Left[0,0],99);
+    Move(Buf[99],Corner[0,0],780);
+    Move(Buf[879],Cursor[0,0],45);
+    Move(Buf[924],Sprite[0,0],25);
+    Move(Buf[949],Rectangle[0,0],9280);
+  <span class="code-keyword">end</span>;
+
+  <span class="code-keyword">Procedure</span> boutons(x,y:Integer;OO,BA,GOCH,DROATT:Char);
+  <span class="code-keyword">begin</span>
+    Square(x+13,y,x+24,y+11,15);
+    Square(x,y+13,x+11,y+24,15);
+    Square(x+13,y+13,x+24,y+24,15);
+    Square(x+26,y+13,x+37,y+24,15);
+    OutText(x+16,y+2,OO);
+    OutText(x+16,y+15,BA);
+    OutText(x+3,y+15,GOCH);
+    OutText(x+29,y+15,DROATT);
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  ClearScreen(0);
+  TakeSprite;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    FilledSquare(i*39+88,10,i*39+120,33,23);
+    Square(i*39+90,12,i*39+118,31,19);
+  <span class="code-keyword">end</span>;
+  LineHoriz(90,118,30,10);
+  LineHoriz(90,118,31,10);
+  LineHoriz(168,196,12,10);
+  LineHoriz(168,196,13,10);
+  LineVertic(129,12,31,10);
+  LineVertic(130,12,31,10);
+  LineVertic(234,12,31,10);
+  LineVertic(235,12,31,10);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> LineVertic(i*39+84,35,151,15);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> LineHoriz(84,240,i*29+35,15);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> OutText(0,45+i*29,'JOUEUR '+Chr(Byte(i)+49));
+  OutText(131,155,'VITESSE');
+  LineHoriz(15,264,170,15);
+  Boutons(252,37,'Z','S','Q','D');
+  Boutons(252,66,'O','L','K','M');
+  Boutons(252,95,Chr(24),Chr(25),Chr(26),Chr(27));
+  Boutons(252,124,'8','5','4','6');
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 10 <span class="code-keyword">do</span> Move(Left[i,0],Buffer^[165+i,4],9);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 14 <span class="code-keyword">do</span> Move(Corner[i,0],Buffer^[161+i,268],52);
+  AfficheAll;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> InitBorder(Which:Byte;P1,P2,P3,P4:Boolean;ASide:Direction);
+<span class="code-keyword">var</span> APLayer:Byte;AExists:Boolean;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> P1 <span class="code-keyword">then</span> APlayer:=1;
+  <span class="code-keyword">if</span> P2 <span class="code-keyword">then</span> APlayer:=2;
+  <span class="code-keyword">if</span> P3 <span class="code-keyword">then</span> APlayer:=3;
+  <span class="code-keyword">if</span> P4 <span class="code-keyword">then</span> APlayer:=4;
+  <span class="code-keyword">if</span> P1 or P2 or P3 or P4 <span class="code-keyword">then</span> AExists:=True <span class="code-keyword">else</span> AExists:=False;
+  <span class="code-keyword">if</span> AExists <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span>(PlayerExists[APLayer]) <span class="code-keyword">then</span> Inc(NbrPlayer);
+    PlayerExists[APlayer]:=True;
+    Score[APLayer]:=0;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">With</span> Border[Which] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Exists:=AExists;
+    Side:=ASide;
+    Player:=APlayer;
+    Effect:=0;
+    Effect2:=0;
+    <span class="code-keyword">if</span> Exists <span class="code-keyword">then</span> <span class="code-keyword">Case</span> Aside <span class="code-keyword">of</span>
+      Haut:<span class="code-keyword">begin</span>
+        X:=160;
+        Y:=5;
+        Lim1:=0;
+        Lim2:=109;
+      <span class="code-keyword">end</span>;
+      Bas:<span class="code-keyword">begin</span>
+        X:=160;
+        Y:=195;
+        Lim1:=119;
+        Lim2:=199;
+      <span class="code-keyword">end</span>;
+      Gauche:<span class="code-keyword">begin</span>
+        X:=5;
+        Y:=100;
+        Lim1:=0;
+        Lim2:=109;
+      <span class="code-keyword">end</span>;
+      Droite:<span class="code-keyword">begin</span>
+        X:=315;
+        Y:=100;
+        Lim1:=189;
+        Lim2:=319;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DrawBall(X,Y:Integer);
+<span class="code-keyword">var</span> i,j:Byte;
+<span class="code-keyword">begin</span>
+  Dec(X,2);
+  Dec(Y,2);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> Pixel(X+i,Y+j,Sprite[j,i]);
+<span class="code-keyword">end</span>;
+
+
+
+<span class="code-keyword">Procedure</span> HandleMenu;
+<span class="code-keyword">var</span> x,y,k,Compteur:Byte;XCursor:Integer;Players:<span class="code-keyword">Array</span>[0..3,0..3] <span class="code-keyword">of</span> Boolean;BoutonReleased:Boolean;
+<span class="code-keyword">Const</span>
+  BounceBall:<span class="code-keyword">Array</span>[0..18] <span class="code-keyword">of</span> ShortInt=(-6,-5,-4,-3,-3,-2,-2,-1,-1,0,1,1,2,2,3,3,4,5,6);
+
+  <span class="code-keyword">Procedure</span> DrawCursor(X:Integer);
+  <span class="code-keyword">var</span> i:Byte;
+  <span class="code-keyword">begin</span>
+    FilledSquare(XCursor,165,XCursor+4,175,0);
+    LineHoriz(15,264,170,15);
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 8 <span class="code-keyword">do</span> Move(Cursor[i,0],Buffer^[166+i,X],5);
+    XCursor:=X;
+  <span class="code-keyword">end</span>;
+
+  <span class="code-keyword">Procedure</span> DrawCross(x,y,Color:Byte);
+  <span class="code-keyword">var</span> i:Byte;
+  <span class="code-keyword">begin</span>;
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 19 <span class="code-keyword">do</span> Pixel(94+x*39+i,40+y*29+i,Color);
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 19 <span class="code-keyword">do</span> Pixel(113+x*39-i,40+y*29+i,Color);
+  <span class="code-keyword">end</span>;
+
+  <span class="code-keyword">Procedure</span> RefreshBottom;
+  <span class="code-keyword">begin</span>
+    DrawCursor(Speed+13);
+    OutText(181,155,NewStr(Speed)+'    ');
+    Draw(0,155,319,174);
+    HideMouse;
+    Affiche;
+    ShowMouse;
+   <span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> Players[x,y]:=False;
+  NbrPlayer:=0;
+  Speed:=225;
+  OutText(181,155,NewStr(Speed)+'    ');
+  DrawCursor(Speed+13);
+  AfficheAll;
+  InitMouse;
+  ChangeCursor(7,7,Seg(ACross),Ofs(ACross));
+  PutMouse(20,20);
+  BoutonReleased:=True;
+  <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> PlayerExists[i]:=False;
+  BallY:=197 <span class="code-keyword">shl</span> 1;
+  BallX:=317;
+  Compteur:=0;
+  <span class="code-keyword">Repeat</span>
+    <span class="code-keyword">if</span> Bouton(1) <span class="code-keyword">and</span> BoutonReleased <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      BoutonReleased:=False;
+      GetPosition;
+      <span class="code-keyword">if</span> InSquare(84,35,240,151) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        x:=(MouseX-84) <span class="code-keyword">div</span> 39;
+        y:=(MouseY-35) <span class="code-keyword">div</span> 29;
+        Players[x,y]:=<span class="code-keyword">not</span>(Players[x,y]);
+        DrawCross(x,y,Ord(Players[x,y])*15);
+        <span class="code-keyword">for</span> k:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> (k&lt;&gt;y) <span class="code-keyword">and</span> Players[x,k] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Players[x,k]:=False;
+          DrawCross(x,k,0);
+        <span class="code-keyword">end</span>;
+        HideMouse;
+        AfficheAll;
+        ShowMouse;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> InSquare(15,166,264,174) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Speed:=(MouseX-15);
+        RefreshBottom;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> InSquare(4,165,12,175) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Speed&gt;0 <span class="code-keyword">then</span> Dec(Speed);
+        RefreshBottom;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> InSquare(268,165,276,175) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Speed&lt;250 <span class="code-keyword">then</span> Inc(Speed);
+        RefreshBottom;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span> <span class="code-keyword">else</span> MouseX:=-1;
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> Bouton(1) <span class="code-keyword">then</span> BoutonReleased:=True;
+
+    <span class="code-keyword">if</span> Compteur <span class="code-keyword">mod</span> 13=0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> BallX=317 <span class="code-keyword">then</span> DepX:=-1;
+      <span class="code-keyword">if</span> BallX=2 <span class="code-keyword">then</span> DepX:=1;
+      FilledSquare(BallX-2,BallY <span class="code-keyword">shr</span> 1-2,BallX+2,BallY <span class="code-keyword">shr</span> 1+2,0);
+      Inc(BallX,DepX);
+      Inc(BallY,BounceBall[Compteur <span class="code-keyword">div</span> 13]);
+      DrawBall(BallX,BallY <span class="code-keyword">shr</span> 1);
+      Draw(BallX-3,BallY <span class="code-keyword">shr</span> 1-6,BallX+3,BallY <span class="code-keyword">shr</span> 1+6);
+      HideMouse;
+      Affiche;
+      ShowMouse;
+    <span class="code-keyword">end</span>;
+    Delay(5);
+    Inc(Compteur);
+    <span class="code-keyword">if</span> Compteur=246 <span class="code-keyword">then</span> Compteur:=0;
+
+  <span class="code-keyword">Until</span> InSquare(288,161,319,175);
+  HideMouse;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> InitBorder(i,Players[i,0],Players[i,1],Players[i,2],Players[i,3],Direction(i));
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> TakeDir(Player:Byte);
+  <span class="code-keyword">Procedure</span> Define(AUp,ALeft,ADown,ARight:Boolean);
+  <span class="code-keyword">begin</span>
+    Up:=AUp;
+    Down:=ADown;
+    Left:=ALeft;
+    Right:=ARight;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Case</span> Player <span class="code-keyword">of</span>
+    1:Define(K_Z,K_Q,K_S,K_D);
+    2:Define(K_O,K_K,K_L,K_M);
+    3:Define(K_Up,K_Left,K_Down,K_Right);
+    4:Define(K_8,K_4,K_5,K_6);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DegradeHoriz(Y:Integer);
+<span class="code-keyword">begin</span>
+  Move(ColorDegradeHoriz[0],Buffer^[Y,0],320);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DegradeVertic(X:Integer);
+<span class="code-keyword">var</span> i:Word;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> Pixel(X,i,ColorDegradeVertic[i]);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> RedrawAll;
+<span class="code-keyword">begin</span>
+  ClearScreen(0);
+  <span class="code-keyword">if</span> Border[3].Exists=False <span class="code-keyword">then</span> DegradeVertic(319);
+  <span class="code-keyword">if</span> Border[2].Exists=False <span class="code-keyword">then</span> DegradeHoriz(0);
+  <span class="code-keyword">if</span> Border[1].Exists=False <span class="code-keyword">then</span> DegradeVertic(0);
+  <span class="code-keyword">if</span> Border[0].Exists=False <span class="code-keyword">then</span> DegradeHoriz(199);
+  DrawBall(BallX <span class="code-keyword">shr</span> 7,BallY <span class="code-keyword">shr</span> 7);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> AfficheScore;
+<span class="code-keyword">var</span> i,k:Byte;
+<span class="code-keyword">const</span> Coord:<span class="code-keyword">Array</span>[0..7] <span class="code-keyword">of</span> Byte=(5,5,85,5,5,33,85,33);
+
+  <span class="code-keyword">Procedure</span> AffichePlayer(X,Y:Integer;APlayer:Byte);
+  <span class="code-keyword">var</span> j:Byte;
+  <span class="code-keyword">begin</span>
+    FilledSquare(X,Y,X+26,Y+19,0);
+    FilledSquare(X+30,Y+6,X+63,Y+16,0);
+    <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Border[j].Player=APLayer <span class="code-keyword">then</span> <span class="code-keyword">Case</span> Border[j].Side <span class="code-keyword">of</span>
+      Haut:FilledSquare(X+2,Y+2,X+24,Y+3,16);
+      Bas:FilledSquare(X+2,Y+16,X+24,Y+17,16);
+      Gauche:FilledSquare(X+2,Y+2,X+3,Y+17,16);
+      Droite:FilledSquare(X+23,Y+2,X+24,Y+17,16);
+    <span class="code-keyword">end</span>;
+    OutText(X+31,Y+8,NewStr(Score[APlayer]));
+    Inc(k,2);
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> NbrPlayer&gt;=2 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 57 <span class="code-keyword">do</span> Move(Rectangle[i,0],Buffer^[71+i,80],160);
+    OutText(135,61,'SCORES');
+    k:=0;
+    <span class="code-keyword">for</span> i:=1 <span class="code-keyword">to</span> 4 <span class="code-keyword">do</span> <span class="code-keyword">if</span> PlayerExists[i] <span class="code-keyword">then</span> AffichePlayer(Coord[k]+80,Coord[k+1]+71,i);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> HandleBorder(Which:Byte);
+<span class="code-keyword">var</span> i,DistY,DistX:Integer;
+  <span class="code-keyword">Procedure</span> ToZero(<span class="code-keyword">Var</span> X:Integer;Value:Integer);
+  <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> X&gt;0 <span class="code-keyword">then</span> Dec(X,Value);
+    <span class="code-keyword">if</span> X&lt;0 <span class="code-keyword">then</span> Inc(X,Value);
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">Procedure</span> SlowBall;
+  <span class="code-keyword">begin</span>
+    ToZero(DepX,Abs(DepX <span class="code-keyword">div</span> 10));
+    ToZero(DepY,Abs(DepY <span class="code-keyword">div</span> 10));
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">Procedure</span> BounceBallHorizontally;
+  <span class="code-keyword">begin</span>
+    <span class="code-keyword">With</span> Border[Which] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      SlowBall;
+      DepX:=-DepX;
+      Inc(DepY,Effect);
+      <span class="code-keyword">if</span> Side=Droite <span class="code-keyword">then</span> Dec(DepX,Effect2) <span class="code-keyword">else</span> Inc(DepX,Effect2);
+      <span class="code-keyword">if</span> DepY&lt;-256 <span class="code-keyword">then</span> DepY:=-256;
+      <span class="code-keyword">if</span> DepY&gt;256 <span class="code-keyword">then</span> DepY:=256;
+      <span class="code-keyword">if</span> DepX&lt;-256 <span class="code-keyword">then</span> DepX:=-256;
+      <span class="code-keyword">if</span> DepX&gt;256 <span class="code-keyword">then</span> DepX:=256;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+
+  <span class="code-keyword">Procedure</span> BounceBallVertically;
+  <span class="code-keyword">begin</span>
+    <span class="code-keyword">With</span> Border[Which] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      SlowBall;
+      DepY:=-DepY;
+      Inc(DepX,Effect);
+      <span class="code-keyword">if</span> Side=Bas <span class="code-keyword">then</span> Dec(DepY,Effect2) <span class="code-keyword">else</span> Inc(DepY,Effect2);
+      <span class="code-keyword">if</span> DepX&lt;-256 <span class="code-keyword">then</span> DepX:=-256;
+      <span class="code-keyword">if</span> DepX&gt;256 <span class="code-keyword">then</span> DepX:=256;
+      <span class="code-keyword">if</span> DepY&lt;-256 <span class="code-keyword">then</span> DepY:=-256;
+      <span class="code-keyword">if</span> DepY&gt;256 <span class="code-keyword">then</span> DepY:=256;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Border[Which] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">if</span> (Side=Gauche) or (Side=Droite) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Exists <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">for</span> i:=-10 <span class="code-keyword">to</span> 10 <span class="code-keyword">do</span> Pixel(X,Y+i,0);
+        <span class="code-keyword">if</span> Left <span class="code-keyword">and</span> (X&gt;Lim1) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Dec(X);
+          <span class="code-keyword">if</span> (Side=Droite) <span class="code-keyword">and</span> (Effect2&lt;100) <span class="code-keyword">then</span> Inc(Effect2,11);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Droite) <span class="code-keyword">and</span> (<span class="code-keyword">not</span>(Left) or (X=Lim1)) <span class="code-keyword">then</span> Effect2:=0;
+        <span class="code-keyword">if</span> Right <span class="code-keyword">and</span> (X&lt;Lim2) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(X);
+          <span class="code-keyword">if</span> (Side=Gauche) <span class="code-keyword">and</span> (Effect2&lt;100) <span class="code-keyword">then</span> Inc(Effect2,11);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Gauche) <span class="code-keyword">and</span> (<span class="code-keyword">not</span>(Right) or (X=Lim2)) <span class="code-keyword">then</span> Effect2:=0;
+        <span class="code-keyword">if</span> Up <span class="code-keyword">and</span> (Y&gt;12) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Dec(Y,2);
+          <span class="code-keyword">if</span> Effect&gt;0 <span class="code-keyword">then</span> Effect:=0;
+          <span class="code-keyword">if</span> Effect&gt;-100 <span class="code-keyword">then</span> Dec(Effect,7);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> Y=12 <span class="code-keyword">then</span> Dec(Y);
+        <span class="code-keyword">if</span> Down <span class="code-keyword">and</span> (Y&lt;187) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Y,2);
+          <span class="code-keyword">if</span> Effect&lt;0 <span class="code-keyword">then</span> Effect:=0;
+          <span class="code-keyword">if</span> Effect&lt;100 <span class="code-keyword">then</span> Inc(Effect,7);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> Y=187 <span class="code-keyword">then</span> Inc(Y);
+        <span class="code-keyword">if</span> <span class="code-keyword">not</span>(Up or Down) <span class="code-keyword">then</span> Effect:=0;
+        <span class="code-keyword">for</span> i:=-10 <span class="code-keyword">to</span> 10 <span class="code-keyword">do</span> Pixel(X,Y+i,64+Abs(i));
+        Draw(X-1,Y-14,X+1,Y+14);
+        Affiche;
+        DistY:=(BallY <span class="code-keyword">shr</span> 7)-Y;
+        DistX:=(BallX <span class="code-keyword">shr</span> 7)-X;
+        <span class="code-keyword">if</span> Abs(DistY)&lt;=12 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> (DistX&lt;=3) <span class="code-keyword">and</span> (DistX&gt;0) <span class="code-keyword">and</span> (DepX&lt;=0) <span class="code-keyword">then</span> BounceBallHorizontally;
+          <span class="code-keyword">if</span> (DistX&gt;=-3) <span class="code-keyword">and</span> (DistX&lt;0) <span class="code-keyword">and</span> (DepX&gt;=0) <span class="code-keyword">then</span> BounceBallHorizontally;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Gauche) <span class="code-keyword">and</span> (BallX&lt;0) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Border[i].Player&lt;&gt;Border[Which].Player <span class="code-keyword">then</span>
+          Inc(Score[Border[i].Player]);
+          FilledSquare(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2,0);
+          BallX:=(X+3) <span class="code-keyword">shl</span> 7;
+          BallY:=Y <span class="code-keyword">shl</span> 7;
+          DepX:=128;
+          DepY:=0;
+          AfficheScore;
+          OutText(120,130-Ord(NbrPlayer&lt;2)*50,'YOU LOUZE');
+          OutText(30,140-Ord(NbrPlayer&lt;2)*50,'APPUYEZ SUR UNE TOUCHE DE DIRECTION');
+          OutText(70,150-Ord(NbrPlayer&lt;2)*50,'POUR RELANCER LA BALLE');
+          AfficheAll;
+          Delay(750);
+          <span class="code-keyword">Repeat</span>
+            TakeDir(Border[Which].Player);
+            <span class="code-keyword">if</span> Up <span class="code-keyword">then</span> DepY:=-128;
+            <span class="code-keyword">if</span> Down <span class="code-keyword">then</span> DepY:=128;
+            <span class="code-keyword">if</span> Left <span class="code-keyword">then</span> DepX:=-128;
+          <span class="code-keyword">Until</span> Up or Down or Right or Left;
+          ClearScreen(0);
+          RedrawAll;
+          AfficheAll;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Droite) <span class="code-keyword">and</span> (BallX&gt;319 <span class="code-keyword">shl</span> 7) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Border[i].Player&lt;&gt;Border[Which].Player <span class="code-keyword">then</span>
+          Inc(Score[Border[i].Player]);
+          FilledSquare(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2,0);
+          BallX:=(X-3) <span class="code-keyword">shl</span> 7;
+          BallY:=Y <span class="code-keyword">shl</span> 7;
+          DepX:=-128;
+          DepY:=0;
+          AfficheScore;
+          OutText(120,130-Ord(NbrPlayer&lt;2)*50,'YOU LOUZE');
+          OutText(30,140-Ord(NbrPlayer&lt;2)*50,'APPUYEZ SUR UNE TOUCHE DE DIRECTION');
+          OutText(70,150-Ord(NbrPlayer&lt;2)*50,'POUR RELANCER LA BALLE');
+          AfficheAll;
+          Delay(750);
+          <span class="code-keyword">Repeat</span>
+            TakeDir(Border[Which].Player);
+            <span class="code-keyword">if</span> Up <span class="code-keyword">then</span> DepY:=-128;
+            <span class="code-keyword">if</span> Down <span class="code-keyword">then</span> DepY:=128;
+            <span class="code-keyword">if</span> Right <span class="code-keyword">then</span> DepX:=128;
+          <span class="code-keyword">Until</span> Up or Down or Left or Right;
+          ClearScreen(0);
+          RedrawAll;
+          AfficheAll;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Side=Gauche) <span class="code-keyword">and</span> (BallX <span class="code-keyword">shr</span> 7&lt;6) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        DegradeVertic(0);
+        Draw(0,0,2,199);
+        Affiche;
+        <span class="code-keyword">if</span> BallX <span class="code-keyword">shr</span> 7&lt;3 <span class="code-keyword">then</span> DepX:=-DepX;
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Side=Droite) <span class="code-keyword">and</span> (BallX <span class="code-keyword">shr</span> 7&gt;313) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        DegradeVertic(319);
+        Draw(317,0,319,199);
+        Affiche;
+        <span class="code-keyword">if</span> BallX <span class="code-keyword">shr</span> 7&gt;316 <span class="code-keyword">then</span> DepX:=-DepX;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Side=Bas) or (Side=Haut) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Exists <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">for</span> i:=-10 <span class="code-keyword">to</span> 10 <span class="code-keyword">do</span> Pixel(X+i,Y,0);
+        <span class="code-keyword">if</span> Up <span class="code-keyword">and</span> (Y&gt;Lim1) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Dec(Y);
+          <span class="code-keyword">if</span> (Side=Bas) <span class="code-keyword">and</span> (Effect2&lt;100) <span class="code-keyword">then</span> Inc(Effect2,11);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Bas) <span class="code-keyword">and</span> (<span class="code-keyword">not</span>(Up) or (Y=Lim1)) <span class="code-keyword">then</span> Effect2:=0;
+        <span class="code-keyword">if</span> Down <span class="code-keyword">and</span> (Y&lt;Lim2) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(Y);
+          <span class="code-keyword">if</span> (Side=Haut) <span class="code-keyword">and</span> (Effect2&lt;100) <span class="code-keyword">then</span> Inc(Effect2,11);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Haut) <span class="code-keyword">and</span> (<span class="code-keyword">not</span>(Down) or (Y=Lim2)) <span class="code-keyword">then</span> Effect2:=0;
+        <span class="code-keyword">if</span> Left <span class="code-keyword">and</span> (X&gt;12) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Dec(X,2);
+          <span class="code-keyword">if</span> Effect&gt;0 <span class="code-keyword">then</span> Effect:=0;
+          <span class="code-keyword">if</span> Effect&gt;-100 <span class="code-keyword">then</span> Dec(Effect,7);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> X=12 <span class="code-keyword">then</span> Dec(X);
+        <span class="code-keyword">if</span> Right <span class="code-keyword">and</span> (X&lt;307) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          Inc(X,2);
+          <span class="code-keyword">if</span> Effect&lt;0 <span class="code-keyword">then</span> Effect:=0;
+          <span class="code-keyword">if</span> Effect&lt;100 <span class="code-keyword">then</span> Inc(Effect,7);
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> X=307 <span class="code-keyword">then</span> Inc(X);
+        <span class="code-keyword">if</span> <span class="code-keyword">not</span>(Left or Right) <span class="code-keyword">then</span> Effect:=0;
+        <span class="code-keyword">for</span> i:=-10 <span class="code-keyword">to</span> 10 <span class="code-keyword">do</span> Pixel(X+i,Y,64+Abs(i));
+        Draw(X-14,Y-1,X+14,Y+1);
+        Affiche;
+        DistY:=(BallY <span class="code-keyword">shr</span> 7)-Y;
+        DistX:=(BallX <span class="code-keyword">shr</span> 7)-X;
+        <span class="code-keyword">if</span> Abs(DistX)&lt;=12 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> (DistY&lt;=3) <span class="code-keyword">and</span> (DistY&gt;0) <span class="code-keyword">and</span> (DepY&lt;=0) <span class="code-keyword">then</span> BounceBallVertically;
+          <span class="code-keyword">if</span> (DistY&gt;=-3) <span class="code-keyword">and</span> (DistY&lt;0) <span class="code-keyword">and</span> (DepY&gt;=0) <span class="code-keyword">then</span> BounceBallVertically;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Haut) <span class="code-keyword">and</span> (BallY&lt;0) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Border[i].Player&lt;&gt;Border[Which].Player <span class="code-keyword">then</span>
+          Inc(Score[Border[i].Player]);
+          FilledSquare(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2,0);
+          BallX:=X <span class="code-keyword">shl</span> 7;
+          <span class="code-keyword">if</span> BallX&lt;385 <span class="code-keyword">then</span> BallX:=385;
+          <span class="code-keyword">if</span> BallX&gt;316 <span class="code-keyword">shl</span> 7 <span class="code-keyword">then</span> BallX:=316 <span class="code-keyword">shl</span> 7;
+          BallY:=(Y+3) <span class="code-keyword">shl</span> 7;
+          DepY:=128;
+          DepX:=0;
+          AfficheScore;
+          OutText(120,130-Ord(NbrPlayer&lt;2)*50,'YOU LOUZE');
+          OutText(30,140-Ord(NbrPlayer&lt;2)*50,'APPUYEZ SUR UNE TOUCHE DE DIRECTION');
+          OutText(70,150-Ord(NbrPlayer&lt;2)*50,'POUR RELANCER LA BALLE');
+          AfficheAll;
+          Delay(750);
+          <span class="code-keyword">Repeat</span>
+            TakeDir(Border[Which].Player);
+            <span class="code-keyword">if</span> Left <span class="code-keyword">then</span> DepX:=-128;
+            <span class="code-keyword">if</span> Right <span class="code-keyword">then</span> DepX:=128;
+            <span class="code-keyword">if</span> Up <span class="code-keyword">then</span> DepY:=-128;
+          <span class="code-keyword">Until</span> Left or Down or Right or Up;
+          ClearScreen(0);
+          RedrawAll;
+          AfficheAll;
+        <span class="code-keyword">end</span>;
+        <span class="code-keyword">if</span> (Side=Bas) <span class="code-keyword">and</span> (BallY&gt;199 <span class="code-keyword">shl</span> 7) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+          <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">if</span> Border[i].Player&lt;&gt;Border[Which].Player <span class="code-keyword">then</span>
+          Inc(Score[Border[i].Player]);
+          FilledSquare(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2,0);
+          BallX:=X <span class="code-keyword">shl</span> 7;
+          <span class="code-keyword">if</span> BallX&lt;385 <span class="code-keyword">then</span> BallX:=385;
+          <span class="code-keyword">if</span> BallX&gt;316 <span class="code-keyword">shl</span> 7 <span class="code-keyword">then</span> BallX:=316 <span class="code-keyword">shl</span> 7;
+          BallY:=(Y-3) <span class="code-keyword">shl</span> 7;
+          DepY:=-128;
+          DepX:=0;
+          AfficheScore;
+          OutText(120,130-Ord(NbrPlayer&lt;2)*50,'YOU LOUZE');
+          OutText(30,140-Ord(NbrPlayer&lt;2)*50,'APPUYEZ SUR UNE TOUCHE DE DIRECTION');
+          OutText(70,150-Ord(NbrPlayer&lt;2)*50,'POUR RELANCER LA BALLE');
+          AfficheAll;
+          Delay(750);
+          <span class="code-keyword">Repeat</span>
+            TakeDir(Border[Which].Player);
+            <span class="code-keyword">if</span> Left <span class="code-keyword">then</span> DepX:=-128;
+            <span class="code-keyword">if</span> Right <span class="code-keyword">then</span> DepX:=128;
+            <span class="code-keyword">if</span> Down <span class="code-keyword">then</span> DepY:=128;
+          <span class="code-keyword">Until</span> Left or Up or Right or Down;
+          ClearScreen(0);
+          RedrawAll;
+          AfficheAll;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Side=Haut) <span class="code-keyword">and</span> (BallY <span class="code-keyword">shr</span> 7&lt;6) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        DegradeHoriz(0);
+        Draw(0,0,319,2);
+        Affiche;
+        <span class="code-keyword">if</span> BallY <span class="code-keyword">shr</span> 7&lt;3 <span class="code-keyword">then</span> DepY:=-DepY;
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> (Side=Bas) <span class="code-keyword">and</span> (BallY <span class="code-keyword">shr</span> 7&gt;193) <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        DegradeHoriz(199);
+        Draw(0,197,319,199);
+        Affiche;
+        <span class="code-keyword">if</span> BallY <span class="code-keyword">shr</span> 7&gt;196 <span class="code-keyword">then</span> DepY:=-DepY;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-comment">{-------------------------------------------------------------------}</span>
+
+<span class="code-keyword">Procedure</span> Intro;
+<span class="code-keyword">var</span> H:Handle;Degrade:<span class="code-keyword">Array</span>[0..95,0..2] <span class="code-keyword">of</span> Byte;i,j:Byte;ColorPong:<span class="code-keyword">Array</span>[0..15,0..2] <span class="code-keyword">of</span> Byte;
+
+<span class="code-keyword">begin</span>
+  MCGasCreen;
+  FOPen(H,'Pong.img');
+  LoadPalette('Pong.Pal');
+  Move(Pal[144,0],Degrade[0,0],288);
+  Move(Pal[16,0],ColorPong[0,0],48);
+  FillChar(Pal[144,0],288,0);
+  DefinePal;
+  FRead(H,Buffer^[0,0],64000);
+  AfficheAll;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 95 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    DefineAColor(Degrade[i,0],Degrade[i,1],Degrade[i,2],i+144);
+    Delay(10);
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">While</span> keypressed <span class="code-keyword">do</span> Readkey;
+  <span class="code-keyword">Repeat</span> Delay(1) <span class="code-keyword">Until</span> keypressed;
+  LoadPalette('Pong.Pal');
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 63 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 15 <span class="code-keyword">do</span> <span class="code-keyword">if</span> ColorPong[j,0]&lt;63 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Inc(ColorPong[j,0]);
+      Inc(ColorPong[j,1]);
+      Inc(ColorPong[j,2]);
+    <span class="code-keyword">end</span>;
+    Move(ColorPong[0,0],Pal[16,0],48);
+    DefinePal;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 112 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 2 <span class="code-keyword">do</span> Pal[127+i,j]:=63;
+    <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 16 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Pal[127+i+j,0]&lt;55 <span class="code-keyword">then</span> Inc(Pal[127+i+j,0],4);
+      <span class="code-keyword">if</span> Pal[127+i+j,1]&lt;55 <span class="code-keyword">then</span> Inc(Pal[127+i+j,1],4);
+      <span class="code-keyword">if</span> Pal[127+i+j,2]&lt;55 <span class="code-keyword">then</span> Inc(Pal[127+i+j,2],4);
+    <span class="code-keyword">end</span>;
+    Delay(40);
+    DefinePal;
+  <span class="code-keyword">end</span>;
+  FClose(H);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DirectionRandom;
+<span class="code-keyword">var</span> Angle:Byte;
+<span class="code-keyword">begin</span>
+  Randomize;
+  Angle:=Random(256);
+  DepX:=Round(Cos((Angle*Pi)/128)*128);
+  DepY:=Round(Sin((Angle*Pi)/128)*128);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+<span class="code-comment">{---------------------LE SCROLLING----------------------------------------------}</span>
+
+  InitGraph;
+  GetMem(Image,64000);
+  LoadImage;
+  LoadLetters;
+  ShowBkGnd;
+  FillChar(Buf,SizeOf(Buf),0);
+  StopScrolling:=False;
+  SuperScrolling;
+  CloseGraph;
+
+  Intro;
+
+<span class="code-comment">{----------------------------LE JEU----------------------------------------}</span>
+  ClearScreen(0);
+  AfficheAll;
+  LoadPalette('Pong.Pal');
+  LoadCarac;
+  AdvKeyOn;
+  EndGame:=False;
+  <span class="code-keyword">Repeat</span>
+    BackToMenu:=False;
+    DrawMenu;
+    HandleMenu;
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> ColorDegradeHoriz[i]:=i <span class="code-keyword">shr</span> 2+160;
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> ColorDegradeVertic[i]:=(800+i*2) <span class="code-keyword">div</span> 5;
+    ClearScreen(0);
+    DirectionRandom;
+    BallX:=160 <span class="code-keyword">shl</span> 7;
+    BallY:=100 <span class="code-keyword">shl</span> 7;
+    RedrawAll;
+    AfficheAll;
+    <span class="code-keyword">Repeat</span>
+      FilledSquare(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2,0);
+      Draw(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2);
+      Inc(BallX,DepX);
+      Inc(BallY,DepY);
+      DrawBall(BallX <span class="code-keyword">shr</span> 7,BallY <span class="code-keyword">shr</span> 7);
+      Draw(BallX <span class="code-keyword">shr</span> 7-2,BallY <span class="code-keyword">shr</span> 7-2,BallX <span class="code-keyword">shr</span> 7+2,BallY <span class="code-keyword">shr</span> 7+2);
+      Affiche;
+      <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 3 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Border[i].Exists <span class="code-keyword">then</span> TakeDir(Border[i].Player);
+        HandleBorder(i);
+      <span class="code-keyword">end</span>;
+      Delay(250-Speed);
+      <span class="code-keyword">if</span> K_Esc <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        AfficheScore;
+        OutText(80,131-Ord(NbrPlayer&lt;2)*40,'F1 POUR QUITTER');
+        OutText(80,141-Ord(NbrPlayer&lt;2)*40,'F2 POUR RETOURNER AU MENU');
+        OutText(80,151-Ord(NbrPlayer&lt;2)*40,'ESPACE POUR CONTINUER');
+        AfficheAll;
+        <span class="code-keyword">Repeat</span>
+          <span class="code-keyword">if</span> K_F1 <span class="code-keyword">then</span> EndGame:=True;
+          <span class="code-keyword">if</span> K_F2 <span class="code-keyword">then</span> BackToMenu:=True;
+        <span class="code-keyword">Until</span> EndGame or K_Space or BackToMenu;
+        RedrawAll;
+        AfficheAll;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">Until</span> EndGame or BackToMenu;
+  <span class="code-keyword">Until</span> EndGame;
+  CloseScreen;
+  AdvKeyOff;
+<span class="code-keyword">end</span>.
 </pre>
 
   </div>
