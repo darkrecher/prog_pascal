@@ -28,13 +28,13 @@
   <p>
     J'ai eu l'idée de cette animation en explorant le logiciel Fractint, un vieux truc sous DOS permettant de générer des fractales. On pouvait y voir les étapes intermédiaires de génération d'un plasma. J'ai eu envie de refaire pareil.
     <br><br>
-    La transition entre deux plasmas successifs est réalisée assez simplement : on décale la couleur de +1 ou -1 jusqu'à arriver à la couleur de destination.
+    La transition entre deux plasmas successifs est réalisée assez simplement : on décale la couleur de chaque pixel de +1 ou -1, jusqu'à arriver à la couleur de destination.
     <br><br><br>
-    Comme d'habitude, c'est un peu lent. C'est pas très optimisé car il y a beaucoup de vérifications booléennes sur des pixels, pour déterminer s'il sont déjà plasmatisés ou pas.
+    Comme d'habitude, c'est un peu lent. C'est pas très optimisé car il y a beaucoup de vérifications booléennes sur des pixels, pour déterminer s'ils sont déjà plasmatisés ou pas.
     <br><br>
     De plus, ça écrit directement dans la mémoire vidéo comme un bourrin. Il n'y a pas de double buffer. Normalement, ça devrait accélérer, sauf qu'il est possible que chaque écriture dans la mémoire déclenche une interruption et un réaffichage, complet ou partiel. Ça dépend du système. Je ne sais pas comment js-dos gère ce genre de bourrineries.
     <br><br><br>
-    La taille de l'animation n'est que de 256x128 pixels, alors que le mode graphique MCGA est en 320x200. La manière dont j'ai généré le plasma ne permet d'avoir que des tailles qui sont des puissances de 2.
+    La taille de l'animation n'est que de 256x128 pixels, alors que le mode graphique MCGA est en 320x200. La manière dont j'ai généré le plasma ne permet d'avoir que des tailles en puissances de 2.
     <br><br>
     J'aurais pu dessiner l'anim sur 512x256 pixels, et n'en afficher qu'une partie. Mais dans ce cas, ça aurait été encore plus lent que ça ne l'est déjà.
     <br><br><br>

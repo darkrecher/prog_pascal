@@ -26,27 +26,27 @@
   </div>
 
   <p>
-    Il s'agit d'un simulateur de spermatozoïdes. Dans mon esprit un peu fou-fou, les petits serpentins représentaient des spermatozoïdes.
+    Il s'agit d'un simulateur de spermatozoïdes. Dans mon esprit un peu fou-fou, c'est ça que représentent les petits serpentins.
     <br><br>
-    J'avais déjà fait une animation avec des étoiles qui avancent, en 640x480 16 couleurs. Je ne crois pas que je l'ai conservée.
+    C'est le même genre d'animation que "hypspace", mais en mieux.
     <br><br>
-    L'un des effets spéciaux de cette anim donne l'impression que les étoiles se déplacent en tournant. Ce n'est pas exactement le cas. En fait, les accélérations en X et en Y sont inversées. (C'est pas très clair de juste dire "c'est inversé", ça mériterait plus d'explications, mais j'ai la flemme de les écrire. Regardez le code source si vous voulez les détails).
+    L'un des effets spéciaux donne l'impression que les étoiles se déplacent en tournant. Ce n'est pas exactement le cas. En fait, les accélérations en X et en Y sont inversées. (C'est pas très clair de juste dire "c'est inversé", ça mériterait plus d'explications, mais j'ai la flemme de les écrire. Regardez le code source si vous voulez les détails).
     <br><br>
     J'ai trouvé cette effet spécial par hasard suite à une erreur. J'ai inversé des X et des Y dans mon code, et en le testant je me suis dit : "c'est pas du tout ce que je voulais obtenir, mais c'est méga cool".
     <br><br>
-    TODO : faut pas expliquer ça ici, mais dans le code de l'anim initial. C'est "hypspace", je l'ai encore ! (J'en étais pas sûr).
+    TODO : faut pas expliquer ça ici, mais dans "hypspace", c'est à dire le code de l'anim initiale. Mais j'ai pas encore mis hypspace sur le site. Patientons un peu...
     <br><br><br>
-    Pour info, le texte qui s'affiche au début indique qu'il faut appuyer sur les touches 0 à 9 pour avoir différentes anims. Vous aurez compris tout seul que ce ne sont pas les chiffres du pavé numérique, mais ceux au-dessus des touches de lettres.
+    Le texte qui s'affiche au début indique qu'il faut appuyer sur les touches 0 à 9 pour avoir différentes anims. Vous aurez compris tout seul que ce ne sont pas les chiffres du pavé numérique, mais ceux au-dessus des touches de lettres.
     <br><br>
     Il y a également 4 touches secrètes, non mentionnées dans le texte, qui permettent de générer des rectangles ou des croix d'étoiles : C, R, P, Z.
     <br><br>
     Vous pouvez appuyer plusieurs fois dessus pour avoir plein plein d'étoiles. Attention, ça risque de tout ralentir si vous en générez trop.
     <br><br>
-    La touche F1 met l'écran en mode texte pour configurer l'animation. Quelques temps avant, j'avais codé un magnifique système de boutons/contrôles/menus en mode texte, que j'aurais pu réutiliser pour cette occasion. Je ne l'ai pas fait. Les codeurs font ça plein de fois : ils codent un truc qui se veut être générique et réutilisable, et ne s'en resservent même pas après.
+    La touche F1 met l'écran en mode texte pour configurer l'animation. Quelques temps avant, j'avais codé un magnifique système de boutons/contrôles/menus en mode texte, que j'aurais pu reprendre pour cette occasion. Je ne l'ai pas fait. Les codeurs font ça plein de fois : ils codent un truc qui se veut être générique et réutilisable, et ne s'en resservent même pas après.
     <br><br><br>
-    Je m'étonne moi-même d'avoir pu écrire du code aussi moche et aussi cryptique. La seule chose dont je puisse être à peu près fier dans ce fatras, c'est les listes chaînées pour gérer les étoiles. On peut théoriquement afficher une infinité d'étoiles grâce à ce concept (ce serait très lent et ça boufferait toute la mémoire, mais théoriquement on peut).
+    Je m'étonne moi-même d'avoir pu écrire du code aussi moche et aussi cryptique. La seule chose dont je puisse être à peu près fier dans ce fatras, c'est les listes chaînées pour gérer les étoiles. On peut théoriquement afficher une infinité d'étoiles grâce à ce concept (ce serait très lent et ça boufferait toute la mémoire, mais on pourrait).
     <br><br>
-    Voici une liste non exhaustive des éléments honteux de ce code :
+    Voici une liste non exhaustive des honteuseries de ce code :
     <br><br>
      - Il y a un maximum de 4 serpents/spermatozoïdes à l'écran. Le mieux aurait été de les mettre dans un tableau fixe de 4 éléments. Mais ils sont dans 4 variables séparées : Snake1, Snake2, Snake3, Snake4.
     <br><br>

@@ -26,12 +26,12 @@
   </div>
 
   <p>
+    Le message initial est un peu déroutant. Il explique que l'anim est lente, mais ne dit pas qu'il faut appuyer sur une touche pour démarrer. Et effectivement, l'anim est super lente, surtout dans l'émulateur js-dos.
+    <br><br>
+    On risque donc de se retrouver dans une situation idiote, où on attend sans appuyer sur une touche. Et comme on est prévenu que c'est lent, on fait l'effort d'attendre super longtemps. Et ça ne démarre jamais. J'ai été un peu crétin d'avoir mis ce message. En fait c'est le temps d'initialisation de tout le bazar initial (le mode graphique, la mémoire, les deux premiers plasmas, etc.) qui m'inquiétait un peu.
+    <br><br><br>
     C'est comme l'animation "Plasma3", sauf qu'il y a deux plasmas superposés, un rouge et un bleu. On change l'un, puis l'autre, puis re-l'un, etc. Il n'y a que 16 niveaux de couleurs pour chaque plasma, car il faut pouvoir afficher toutes les combinaisons possibles de bleu et de rouge. Ça fait donc 16*16 = 256 couleurs.
     <br><br>
-    Le message initial est un peu déroutant. Il explique que l'anim est lente (alors qu'elle ne l'est pas plus que les autres), mais ne dit pas qu'il faut appuyer sur une touche pour démarrer.
-    <br><br>
-    On risque donc de se retrouver dans une situation idiote, où on attend sans appuyer sur une touche. Et comme on est prévenu que c'est lent, on fait l'effort d'attendre super longtemps. Et ça ne démarre jamais. J'ai été un peu crétin d'avoir mis ce message. Désolé. En fait c'est le temps d'initialisation de tout le bazar initial (le mode graphique, la mémoire, les deux premiers plasmas, etc.) qui m'inquiétait un peu.
-    <br><br><br>
     Dans le code, vous remarquerez que certains tableaux ont les coordonnées X et Y inversées, ce qui donne des lignes de ce genre : "Map^[Y,X]:=Color;". Cette inversion se retrouve également dans beaucoup de mes autres programmes.
     <br><br>
     Ça se justifie lorsque les tableaux sont des buffers de pixels, et qu'on a besoin de les copier intégralement entre eux, ou bien vers la mémoire vidéo. Ce sont des "arrays of arrays". Chaque sous-array représente une ligne de pixels. Lorsqu'on veut y accéder, on doit d'abord donner l'indice de l'array principal (le Y), puis celui du sous-array (le X). Ça donne ceci : "Screen[Y][X] := Color", qui s'écrit également sous la forme "Screen[Y,X] := Color".
@@ -58,9 +58,9 @@
     <br><br><br>
     Lorsque j'ai terminé cette anim, j'ai regretté de n'avoir que 256 couleurs. J'aurais voulu faire 3 plasmas superposés : rouge, vert, bleu. Mais pour faire toutes les combinaisons possibles, je n'aurais eu que 6 niveaux de couleurs pour chaque plasma. 6*6*6 = 216. 7*7*7 = 343, trop grand car on dépasse 256.
     <br><br>
-    Quelques années plus tard, j'étais en stage ST40 pour mes études à l'UTBM. Un soir, j'étais tout seul dans ma piaule d'un foyer de jeunes travailleurs et je me faisais un peu chier. J'avais un ordinateur un peu plus puissant : un Pentium 3 450Mhz, qui pouvait très facilement afficher 16 millions de couleurs. J'ai codé un triple-plasma superposé. Mais je n'aurais pas su le faire en Pascal, alors je l'ai fait avec une putain de nom de dieu de macro Excel Visual Basic for Applications.
+    Quelques années plus tard, j'étais en stage ST40 pour mes études à l'UTBM. Un soir, j'étais tout seul dans ma piaule d'un foyer de jeunes travailleurs et je me faisais un peu chier. J'avais un ordinateur un peu plus puissant : un Pentium-3 450Mhz, qui pouvait très facilement afficher 16 millions de couleurs. J'ai codé un triple-plasma superposé. Mais je n'aurais pas su le faire en Pascal, alors je l'ai fait avec une putain de nom de dieu de macro Excel Visual Basic for Applications.
     <br><br>
-    La macro générait des mini-carrés dans la feuille Excel, le même genre de carrés qu'on utilise pour faire des schémas et des dessins. Chacun d'eux représentait un pixel de mon plasma, il y en avait donc beaucoup-beaucoup. C'était n'importe quoi. La génération et l'affichage final a pris une bonne vingtaine de minutes. Et pas question d'animer quoi que ce soit ou de faire des transitions entre plusieurs plasmas. Mais ça a marché, j'avais mon image de triple-plasma superposés.
+    La macro générait des mini-carrés dans la feuille Excel, le même genre de carrés qu'on utilise pour faire des schémas et des dessins. Chacun d'eux représentait un pixel de mon plasma. C'était n'importe quoi. La génération et l'affichage final a pris une bonne vingtaine de minutes. Et pas question d'animer quoi que ce soit ou de faire des transitions entre plusieurs plasmas. Mais ça a marché, j'avais mon image de triple-plasma superposés.
     <br><br>
     Je n'ai pas gardé le code de cette macro Excel. Tant pis !
   </p>
