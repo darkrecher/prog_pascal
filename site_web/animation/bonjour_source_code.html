@@ -28,13 +28,13 @@
   <p>
     Cette animation a été créée à partir de la précédente (Zouli). On retrouvera donc dans le code certaine des choses honteuses déjà vues. La partie config et les touches secrètes ont été supprimées, car le but de cette anim est uniquement d'afficher du texte, de manière classe et distinguée.
     <br><br>
-    Le type de variable TStar comporte une nouvelle sous-variable : Freezable. Elle permet de différencier les étoiles immobilisables de celles qui ne le sont pas. Car les étoiles affichant les textes sont immobiles au début, pour laisser le temps de lire.
+    Le type de variable TStar comporte une nouvelle sous-variable : Freezable. Elle permet de différencier les étoiles immobilisables de celles qui ne le sont pas. En effet, les étoiles affichant les textes sont immobiles au début, pour laisser le temps de lire. Je viens d'utiliser l'expression "en effet" et je me sens bizarre.
     <br><br>
     Il existe une autre version de cette animation, avec, non pas les textes "Bonjour, Salut, etc.", mais la phrase "GOUPIL, A POIL". C'était pour provoquer un pote de l'UTBM, surnommé Goupil.
     <br><br><br>
     Le code importe une librairie intitulée "NewDelay" (C'est rigolo, ça ressemble à New Delhi), et au début du programme principal se trouve la ligne "PatchCrt(Crt.Delay);". C'est dû à un bug dans le Turbo Pascal. La compilation de programmes utilisant la fonction "Delay" échouait sur les ordinateurs trop récents. Plus tard un correctif a été publié, qui nécessitait d'ajouter cette lib et cette ligne de code.
     <br><br>
-    L'explication du bug est assez marrante. La fonction "Delay" sert à attendre. Le temps est indiqué par un paramètre, et il est en millisecondes. L'ordinateur a la notion de cycle d'horloge, mais pas vraiment celle des millisecondes. Pour remédier à cela, le Pascal mesurait la vitesse de l'ordinateur. Il enregistrait la date courante, ne faisait rien durant un certain nombre de cycles d'horloges, et re-enregistrait la date courante. Le nombre de cycles de rien-faisage, divisé par le temps écoulé, permettait d'avoir le ratio "nombre de cycles / une milliseconde".
+    L'explication du bug est assez marrante. La fonction "Delay" sert à attendre. Son paramètre définit le temps, en millisecondes. Un ordinateur connait la notion de cycle d'horloge, mais pas vraiment celle des millisecondes. Pour remédier à cela, le Pascal mesurait la vitesse de l'ordinateur. Il enregistrait la date courante, ne faisait rien durant un certain nombre de cycles d'horloges, et re-enregistrait la date courante. Le nombre de cycles de rien-faisage, divisé par le temps écoulé, permettait d'avoir le ratio "nombre de cycles / une milliseconde".
     <br><br>
     Malheureusement, sur les ordinateurs trop rapides, le temps écoulé était trop court durant la mesure initiale. Ça faisait une division par zéro et ça plantait. Rigolo non ? Sur le coup, j'avais pas trouvé ça drôle du tout.
   </p>

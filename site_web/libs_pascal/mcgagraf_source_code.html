@@ -18,14 +18,14 @@
 
   <div>
     <a href="mcgagraf.pas">&gt; Télécharger le code source (encodage CP437)</a>
-    <br>
+    <br><br>
     <a href="MCGACHAR">&gt; Télécharger MCGACHAR : le fichier de police de caractères</a>
   </div>
 
   <p>
     Il s'agit de la librairie que j'ai le plus utilisée pour mes jeux et mes animations. Elle permet d'activer le mode graphique MCGA (320x200, 256 couleurs), qui est devenu mon mode graphique de prédilection. Le nombre hallucinatoirement élevé de couleurs m'offrait des possibilités de création infinie.
     <br><br>
-    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "sa couleur sera en rouge=40, vert=63, bleu=20". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", sachant que vous avez préalablement défini la couleur numéro 42 à rouge=40, vert=63, bleu=20. Vous l'aurez compris, la palette n'a que 256 couleurs. Et, étrangement, les dosages RVB ne variaient que de 0 à 63, et non pas 0 à 255. Sûrement une autre contrainte.
+    Les couleurs sont gérées avec une palette. Pour définir un pixel à l'écran, vous ne dites pas directement : "sa couleur sera en rouge=40, vert=63, bleu=20". Vous dites : "ce pixel aura la couleur numéro 42 de la palette", sachant que vous avez préalablement défini la couleur numéro 42 à rouge=40, vert=63, bleu=20. Vous l'aurez compris, la palette n'a que 256 couleurs. Et, étrangement, les dosages RVB ne variaient que de 0 à 63, et non pas de 0 à 255. Sûrement une autre contrainte.
     <br><br>
     C'était très limité, mais ce principe de palette permettait de créer des effets intéressants. Vous pouviez changer très rapidement toutes les couleurs de l'écran en modifiant uniquement la palette. Par exemple, un dessin rouge et vert devenait d'un seul coup bleu et jaune.
     <br><br>
@@ -41,11 +41,11 @@
     <br><br>
     Le buffer mémoire étant continu, si on définit un pixel trop à droite, par exemple en X=345, Y=100, ça se reporte sur la ligne d'en dessous, on définit alors le pixel X=25, Y=101. Si on va vraiment trop en bas : X=310, Y=201, ça plante, car on écrit à un endroit non autorisé de la mémoire. Je ne voulais pas m'embêter à gérer ça dans mes anims, alors j'ai ajouté un contrôle des coordonnées. Mais j'avais peur qu'une vérification pour chaque pixel rende l'exécution trop lente. Je l'ai donc codé en assembleur. Et pour optimiser encore plus, je n'ai pas calculé l'emplacement mémoire via une multiplication : offset_mem = Y*200 + X. Par contre je ne sais plus trop quel astuce j'ai utilisée. Je vous laisse consulter le corps de la fonction "Pixel".
     <br><br>
-    Il existait deux versions de cette librairie MCGAGraf, je ne saurais pas retrouver la première. La version la plus récente comporte des fonctions d'affichage de texte : LoadCarac, OutText, TranspText, TextLength. Ces fonctions nécessitent la présence du fichier "MCGACHAR", contenant la police de caractères. La dernière version de la lib et ce fichier de police sont téléchargeables ici.
+    Il existait deux versions de cette librairie MCGAGraf, je ne saurais pas retrouver la première. La version la plus récente comporte des fonctions d'affichage de texte : LoadCarac, OutText, TranspText, TextLength. Ces fonctions nécessitent la présence du fichier "MCGACHAR", définissant la police de caractères.
     <br><br>
-    <img src="mcgachar.png">
+    Le fichier MCGACHAR, après conversion vers un vrai format d'image :
     <br>
-    (Le fichier MCGACHAR, après conversion vers un vrai format d'image.)
+    <img src="mcgachar.png">
     <br><br>
     C'est très prétentieux d'appeler ça une "police de caractères". Il n'y a que les majuscules, les nombres et quelques signes de ponctuation. Et ce ne sont que des images fixes. Mais c'était quand même la classe.
     <br><br>

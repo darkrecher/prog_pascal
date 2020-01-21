@@ -40,9 +40,9 @@
     <br><br>
     On peut aussi jouer à zéro joueurs, mais c'est stupide.
     <br><br>
-    Par contre, le fait de pouvoir renvoyer la balle dans 3 directions possibles lorsqu'on perd, ça casse un peu le jeu. On se retrouve parfois dans une situation où un premier joueurs peut renvoyer la balle à un endroit qu'un deuxième joueur ne peut pas atteindre assez rapidement. Du coup, le premier joueur fait perdre le deuxième. Et le deuxième joueur est lui aussi dans une situation où il peut renvoyer la balle à un endroit inatteignable. Il fait perdre le premier, qui refait perdre le deuxième, qui refait perdre le premier, et ainsi de suite.
+    Par contre, le fait de pouvoir renvoyer la balle dans 3 directions possibles lorsqu'on perd, ça casse un peu le jeu. On se retrouve parfois dans une situation où un premier joueur peut renvoyer la balle à un endroit qu'un deuxième joueur ne peut pas atteindre assez rapidement. Du coup, le premier joueur fait perdre le deuxième. Et le deuxième joueur est lui aussi dans une situation où il peut renvoyer la balle à un endroit inatteignable. Il fait perdre le premier, qui refait perdre le deuxième, qui refait perdre le premier, et ainsi de suite.
     <br><br>
-    J'étais quand même assez fier de ma gestion des rebondissements. Une partie du mouvement de la raquette est ajouté au mouvement de la balle. On peut la dévier ou la faire aller plus vite. Pour éviter que ça parte en cacahuète et que la balle aille trop vite, elle est un petit peu ralentie à chaque rebond (y compris contre les bords statiques). Je voulais faire mieux que tous les casse-briques pourris où la direction de la balle dépend de l'endroit où elle tape sur la raquette, alors que la raquette est toute plate. J'ai écrit tout un article de blog sur cet immense problème. Je vous laisse le retrouver dans mon fatras.
+    J'étais quand même assez fier de ma gestion des rebondissements. Une partie du mouvement de la raquette est ajouté au mouvement de la balle, qui peut donc être déviée ou accélérée. Pour éviter que ça parte en cacahuète et que la balle aille trop vite, elle est un petit peu ralentie à chaque rebond (y compris contre les bords statiques). Je voulais faire mieux que tous les casse-briques pourris où la direction de la balle dépend de l'endroit où elle tape sur la raquette, alors que la raquette est toute plate. J'ai écrit tout un article de blog sur cet immense problème. Je vous laisse le retrouver dans mon fatras.
     <br><br>
     L'un de mes potes avait bien aimé ce jeu et avait tenté un gros match contre son frère. Ils s'étaient aperçu tous les deux que le comptage des points n'était pas équilibré. Un joueur ayant 3 bords devrait gagner, non pas 3 points à chaque fois, mais 6. Ou quelque chose du genre. En tout cas, j'étais assez heureux de voir que mes jeux pouvaient être intéressants au point que des personnes fassent des gros matchs avec. C'était une lointaine époque sans trop d'internet, où l'offre vidéoludique n'était pas aussi foisonnante. Zut, ça suffit la nostalgie.
     <br><br>
@@ -63,7 +63,7 @@
     <br>
     <img src="pong_img.png">
     <br><br>
-    Il s'agit de l'image de présentation, réalisée par moi, à partir de vomi de licorne. Il s'agit d'un format de fichier "maison". On peut pas vraiment parler de format. Les couleurs des pixels sont écrites les unes après les autres dans le fichier. Les dimensions de l'image et la palette de couleur ne sont même pas intégrés dedans.
+    Il s'agit de l'image de présentation, réalisée par moi, à partir de vomi de licorne. Il s'agit d'un format de fichier "maison", même si on ne peut pas vraiment parler de format. Les couleurs des pixels sont écrites les unes après les autres dans le fichier. Les dimensions de l'image et la palette de couleur ne sont même pas intégrés dedans.
     <br><br>
     Le fichier "PONG.SPR" contient cette image :
     <br>
@@ -71,7 +71,7 @@
     <br><br>
     Car il me restait un peu de vomi de licorne. Le premier bidule vert correspond au curseur de définition de la vitesse du jeu. Le second, c'est la balle.
     <br>
-    On reste sur le même non-format de fichier maison, sauf que les pixels des 5 images sont écrites les unes après les autres dans le fichiers. Si on ne connait pas à l'avance le nombre d'images et leurs dimensions respectives, on ne peut rien en faire. Mais vous pouvez trouver ça dans le code source.
+    On reste sur le même non-format de fichier maison, sauf que les pixels des 5 images sont écrits les unes après les autres dans le fichier. Si on ne connait pas à l'avance le nombre d'images et leurs dimensions respectives, on ne peut rien en faire. Vous pouvez retrouver ces infos dans le code source.
   </p>
 
   <h2>Le texte au début du jeu</h2>
@@ -81,7 +81,7 @@
     <br><br>
     Un pote à moi à qui j'apprenais à coder l'avait lui aussi intégré dans l'un de ses jeux. Quand mon frère a vu ça, il a pris un air un peu embêté, et a dit : "je pensais pas que vous seriez tous à reprendre ce que j'ai fait". On était pas "tous", on était "deux". J'ai rien à dire de plus à ce sujet.
     <br><br>
-    Dans le code source, une petite partie du texte a été mise en commentaire :"enormes remerciements a: "... Les caractères juste après, qui sont eux aussi en commentaires, définissent uniquement des effets spéciaux (arrêt du texte, ondulation, ...), il n'y a pas de lettres. Il y en avait au départ, que j'ai enlevées, en plus de mettre en commentaire. J'ai probablement dû faire cette mise en commentaire à la fin du lycée, pour ne pas avoir à répondre à des questions embarrassante de gens qui ne connaissaient pas le contexte.
+    Dans le code source, une petite partie du texte a été mise en commentaire : "enormes remerciements a: ...". Les caractères juste après, qui sont eux aussi en commentaire, définissent uniquement des effets spéciaux (arrêt du texte, ondulation, ...), il n'y a pas de lettres. Il y en avait au départ, que j'ai enlevées, en plus de mettre en commentaire. J'ai probablement dû faire cette modif à la fin du lycée, pour ne pas avoir à répondre à des questions embarrassantes de gens qui n'auraient pas connu le contexte.
     <br><br>
     Les lettres effacées étaient "HB", les initiales de la fille dont j'étais amoureux. J'ai rien à dire de plus à ce sujet.
     <br><br>
