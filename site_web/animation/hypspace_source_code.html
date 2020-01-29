@@ -1,0 +1,303 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=hypspace">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Hypspace - Code source</h1>
+
+  <div>
+    <a href="hypspace.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    bla
+    <br><br>
+    blou
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+
+<span class="code-keyword">uses</span> Graph,Crt;
+
+<span class="code-keyword">type</span>
+  Etoiles=record
+    X,Y,XEnPlus,YEnPlus:Real;
+    Fini:Integer; <span class="code-comment">{Fini:indique depuis combien de temps est apparu l'étoile}</span>
+    Couleur:0..15;
+  <span class="code-keyword">end</span>;
+
+<span class="code-keyword">Var</span>
+  Stars:<span class="code-keyword">Array</span>[0..1000] <span class="code-keyword">of</span> Etoiles;<span class="code-comment">{il y aura un maximum de 1000 étoiles à l'écran}</span>
+  i,Compte:Byte;
+  a,b,c,Vitesse,CentreX,CentreY,NbrStars:Integer;
+  Action,Previous:Char;
+  Nombre:String;
+  Texte:LongInt;
+  NoirEtBlanc:Boolean;
+
+<span class="code-keyword">Procedure</span> NewStar(A:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Stars[A] <span class="code-keyword">do</span>
+  <span class="code-keyword">begin</span>
+    XEnPlus:=Random(501);
+    YEnPlus:=Random(501);
+    XEnPlus:=(XEnPlus-250)/100;
+    YEnPlus:=(YEnPlus-250)/100;
+    X:=60*XEnPlus+CentreX;
+    Y:=60*YEnPlus+CentreY;
+    Fini:=0;
+    <span class="code-keyword">if</span> NoirEtBlanc=False <span class="code-keyword">then</span> Couleur:=Random(8);
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+
+<span class="code-keyword">procedure</span> AvanceEtoile(Se,CoefX,CoefY:integer); <span class="code-comment">{Se=Special Effect}</span>
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">With</span> Stars[i] <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+
+    <span class="code-keyword">Case</span> Se <span class="code-keyword">of</span>
+      0:<span class="code-keyword">begin</span>
+        X:=X+XEnPlus+(Fini/17)*XEnPlus*CoefX;
+        Y:=Y+YEnPlus+(Fini/17)*YEnPlus*CoefY;
+      <span class="code-keyword">end</span>;
+      1:<span class="code-keyword">begin</span>
+        X:=X+XEnPlus+(Fini/17)*XEnPlus*CoefX;
+        Y:=Y+YEnPlus+(Fini/17)*XEnPlus*CoefY;
+      <span class="code-keyword">end</span>;
+      2:<span class="code-keyword">begin</span>
+        X:=X+XEnPlus+(Fini/17)*YEnPlus*CoefX;
+        Y:=Y+YEnPlus+(Fini/17)*YEnPlus*CoefY;
+      <span class="code-keyword">end</span>;
+      3:<span class="code-keyword">begin</span>
+        X:=X+XEnPlus+(Fini/17)*YEnPlus*CoefX;
+        Y:=Y+YEnPlus+(Fini/17)*XEnPlus*CoefY;
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  a:=Se;
+  b:=CoefX;
+  c:=CoefY;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ParamCount&lt;1 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    Writeln('Vous devez indiquer dans les parametres un nombre');
+    Writeln('Qui permettra de regler la vitesse du programme');
+    Writeln('plus ce nombre est grand, plus le programme sera lent.');
+    Writeln('Exemple: Hypspace 150, Hypspace 0, Hypspace 500...');
+    Exit;
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+    Val (ParamStr(1),Vitesse,a);
+    <span class="code-keyword">if</span> a&lt;&gt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Write('Imbecile!!! Vous devez ecrire un nombre!!!');
+      Exit;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> Vitesse&lt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Write('Imbecile!!! Il faut mettre un nombre positif!!');
+      Exit;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">Repeat</span>
+    ClrScr;
+    Writeln ('Entrez le nombre d''étoiles.');
+    Readln(Nombre);
+    Val (Nombre,NbrStars,a);
+    <span class="code-keyword">if</span> a&lt;&gt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      WriteLn('Imbecile!!! Vous devez ecrire un nombre!!!');
+      ReadKey;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> NbrStars&lt;0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      WriteLn('Imbecile!!! Il faut mettre un nombre positif!!');
+      a:=666;
+      ReadKey;
+    <span class="code-keyword">end</span>;
+    <span class="code-keyword">if</span> NbrStars&gt;1000 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      WriteLn('Désolé, mais il est impossible d''avoir plus de 1000 étoiles.');
+      a:=666;
+      ReadKey;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">Until</span> a=0;
+  <span class="code-keyword">Repeat</span>
+    Clrscr;
+    Writeln('Voulez vous des étoiles en couleur?');
+    Action:=ReadKey;
+    Action:=Upcase(Action);
+    <span class="code-keyword">if</span> Action='O' <span class="code-keyword">then</span> NoirEtBlanc:=False;
+    <span class="code-keyword">if</span> Action='N' <span class="code-keyword">then</span> NoirEtBlanc:=True;
+  <span class="code-keyword">Until</span> (Action='O') or (Action='N');
+
+  Randomize;
+  a:=9;
+  b:=2;
+  InitGraph(a,b,'c:\bp\bgi');
+  CentreX:=320;
+  CentreY:=240;
+  a:=0;
+  Compte:=0;
+  Action:='0';
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> NbrStars <span class="code-keyword">do</span> NewStar(i);
+  Texte:=0;
+  <span class="code-keyword">Repeat</span>
+    <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> NbrStars <span class="code-keyword">do</span> <span class="code-keyword">With</span> Stars[i] <span class="code-keyword">do</span>
+    <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Texte&lt;100001 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Texte:=Texte+1;
+      <span class="code-keyword">if</span> (Texte=1) or (Texte=25001) or (Texte=50001) or (Texte=75001) <span class="code-keyword">then</span> SetColor(15);
+      <span class="code-keyword">if</span> (Texte=25000) or (Texte=50000) or (Texte=75000) or (Texte=100000) <span class="code-keyword">then</span> SetColor(0);
+      <span class="code-keyword">if</span> (Texte=1) or (Texte=25000) <span class="code-keyword">then</span> OutTextXY(100,8,'Les super effets spéciaux made by Réchèr Grzmktbq!!!!!');
+      <span class="code-keyword">if</span> (Texte=25001) or (Texte=50000)
+      <span class="code-keyword">then</span> OutTextXY(20,8,'Appuyez sur les flèches pour déplacer le point de départ des étoiles');
+      <span class="code-keyword">if</span> (Texte=50001) or (Texte=75000)
+      <span class="code-keyword">then</span> OutTextXY(20,8,'Appuyez sur Entrée pour remettre le point de départ au centre de l''écran');
+      <span class="code-keyword">if</span> (Texte=75001) or (Texte=100000)
+      <span class="code-keyword">then</span> OutTextXY(50,8,'Appuyez sur les touches de 0 à 9 pour voir les supers effets spéciaux');
+    <span class="code-keyword">end</span>;
+      PutPixel(Round(X),Round(Y),0);
+      <span class="code-keyword">case</span> Action <span class="code-keyword">of</span>
+        '0':<span class="code-keyword">begin</span>
+          AvanceEtoile(0,1,1);
+          a:=0;
+          b:=1;
+          c:=1;
+        <span class="code-keyword">end</span>;
+        '1':AvanceEtoile(0,1,-1);
+        '2':AvanceEtoile(1,-1,1);
+        '3':AvanceEtoile(3,-1,1);
+        '4':<span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Compte=1 <span class="code-keyword">then</span>
+          <span class="code-keyword">begin</span>
+            a:=Random(4);
+            <span class="code-keyword">Case</span> a <span class="code-keyword">of</span>
+              0:<span class="code-keyword">begin</span>
+                a:=0;
+                b:=-1;
+                c:=1;
+              <span class="code-keyword">end</span>;
+              1:<span class="code-keyword">begin</span>
+                a:=0;
+                b:=1;
+                c:=-1;
+              <span class="code-keyword">end</span>;
+              2:<span class="code-keyword">begin</span>
+                a:=3;
+                b:=1;
+                c:=1;
+              <span class="code-keyword">end</span>;
+              3:<span class="code-keyword">begin</span>
+                a:=3;
+                b:=-1;
+                c:=-1;
+              <span class="code-keyword">end</span>;
+            <span class="code-keyword">end</span>;
+          <span class="code-keyword">end</span>;
+          AvanceEtoile(a,b,c);
+          <span class="code-keyword">if</span> Compte=100 <span class="code-keyword">then</span> Compte:=0;
+        <span class="code-keyword">end</span>;
+        '5':<span class="code-keyword">Case</span> Compte <span class="code-keyword">of</span>
+          0..150:AvanceEtoile(3,1,1);
+          151..180:AvanceEtoile(3,-1,-1);
+          181..200:AvanceEtoile(3,1,1);
+          201..221:AvanceEtoile(3,-1,-1);
+          222:Compte:=180;
+        <span class="code-keyword">end</span>;
+        '6':<span class="code-keyword">Case</span> Compte <span class="code-keyword">of</span>
+          0..120:AvanceEtoile(3,1,-1);
+          121..240:AvanceEtoile(3,-1,1);
+          241:Compte:=0;
+        <span class="code-keyword">end</span>;
+        '7':<span class="code-keyword">Case</span> Compte <span class="code-keyword">of</span>
+          0..127:<span class="code-keyword">begin</span>
+            X:=X+XEnPlus+(Fini/(128-Compte))*XEnPlus;
+            Y:=Y+YEnPlus+(Fini/17)*XEnPlus;
+          <span class="code-keyword">end</span>;
+          128..254:<span class="code-keyword">begin</span>
+            X:=X+XEnPlus+(Fini/(Compte-127))*XEnPlus;
+            Y:=Y+YEnPlus+(Fini/17)*XEnPlus;
+          <span class="code-keyword">end</span>;
+          255:Compte:=0;
+        <span class="code-keyword">end</span>;
+        '8':<span class="code-keyword">Case</span> Compte <span class="code-keyword">of</span>
+          0..50:AvanceEtoile(0,1,1);
+          51..150:AvanceEtoile(0,1,1);
+          151..250:AvanceEtoile(0,-1,-1);
+          251:Compte:=50;
+        <span class="code-keyword">end</span>;
+        '9':<span class="code-keyword">begin</span>
+          <span class="code-keyword">if</span> Compte=1 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+            a:=Random(4);
+            <span class="code-keyword">Repeat</span>
+              b:=Random(3)-1;
+            <span class="code-keyword">Until</span> b&lt;&gt;0;
+            <span class="code-keyword">Repeat</span>
+              c:=Random(3)-1;
+            <span class="code-keyword">Until</span> c&lt;&gt;0;
+          <span class="code-keyword">end</span>;
+          AvanceEtoile(a,b,c);
+          <span class="code-keyword">if</span> Compte=100 <span class="code-keyword">then</span> Compte:=0;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+
+      <span class="code-keyword">if</span> Fini&gt;100 <span class="code-keyword">then</span> AvanceEtoile(a,b,c);
+      <span class="code-keyword">if</span> Fini&gt;150 <span class="code-keyword">then</span> AvanceEtoile(a,b,c);
+      <span class="code-keyword">if</span> NoirEtBlanc=False <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Fini=31 <span class="code-keyword">then</span> Couleur:=Couleur+8; <span class="code-comment">{au début les étoiles s'allument petit à petit}</span>
+      <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+        <span class="code-keyword">if</span> Fini=0 <span class="code-keyword">then</span> Couleur:=8;
+        <span class="code-keyword">if</span> Fini=11 <span class="code-keyword">then</span> Couleur:=7;
+        <span class="code-keyword">if</span> Fini=20 <span class="code-keyword">then</span> Couleur:=15;
+      <span class="code-keyword">end</span>;
+      Fini:=Fini+1;
+      PutPixel(Round(X),Round(Y),Couleur);
+      <span class="code-keyword">if</span> (X&lt;0) or (X&gt;639) or (Y&lt;0) or (Y&gt;479)  <span class="code-keyword">then</span>
+      <span class="code-keyword">begin</span>
+        PutPixel(Round(X),Round(Y),0);
+        NewStar(i); <span class="code-comment">{création d'une nouvelle étoile quand y'en a une qui a}</span>
+      <span class="code-keyword">end</span>;          <span class="code-comment">{quitté l'écran}</span>
+    <span class="code-keyword">end</span>;
+    Delay(Vitesse);
+    <span class="code-keyword">if</span> Action in ['4'..'9'] <span class="code-keyword">then</span> Compte:=Compte+1;
+    <span class="code-keyword">if</span> KeyPressed <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+      Previous:=Action;
+      Action:=Readkey;
+      <span class="code-keyword">if</span> Action=#0 <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Action:=ReadKey;
+        <span class="code-keyword">Case</span> Action <span class="code-keyword">of</span>
+          #72:CentreY:=CentreY-1;
+          #75:CentreX:=CentreX-1;
+          #77:CentreX:=CentreX+1;
+          #80:CentreY:=CentreY+1;
+        <span class="code-keyword">end</span>;
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Action=#13 <span class="code-keyword">then</span> <span class="code-keyword">begin</span> CentreX:=320; CentreY:=240; <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Action&lt;&gt;#27 <span class="code-keyword">then</span> <span class="code-keyword">if</span> <span class="code-keyword">not</span> (Action in ['0'..'9']) <span class="code-keyword">then</span> Action:=Previous;
+      <span class="code-keyword">if</span> <span class="code-keyword">not</span> (Action in ['4'..'9']) <span class="code-keyword">then</span> Compte:=0;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">Until</span> Action=#27;
+  CloseGraph;
+<span class="code-keyword">end</span>.
+
+</pre>
+
+  </div>
+
+</body>
+
+</html>

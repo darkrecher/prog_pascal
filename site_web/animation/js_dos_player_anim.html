@@ -43,7 +43,12 @@
       node_title.innerHTML = app_filename
       var node_source_code = document.getElementById("back_to_source_code")
       node_source_code.setAttribute("href", app_filename + "_source_code.html")
-      load_app(app_filename, "..")
+      // Code spécifique à une seule animation. Rien à foutre.
+      if (app_filename == "hypspace") {
+        load_app(app_filename, "..", "0")
+      } else {
+        load_app(app_filename, "..")
+      }
     }
 
   </script>

@@ -21,12 +21,16 @@ function get_app_filename() {
 }
 
 // Oulala, le paramètre "prefix_url", c'est très moche. Tant pis !
-function load_app(app_filename, prefix_url) {
+function load_app(app_filename, prefix_url, str_params = "") {
   Dos(document.getElementById("jsdos"), {
       wdosboxUrl: prefix_url + "/js/js_dos/wdosbox.js"
   }).ready((fs, main) => {
     fs.extract(app_filename + ".zip").then(() => {
-      main(["-c", app_filename + ".exe"])
+      var cmd_line = app_filename + ".exe"
+      if (str_params) {
+        cmd_line += " " + str_params
+      }
+      main(["-c", cmd_line])
     });
   });
 }
