@@ -26,30 +26,35 @@
   </div>
 
   <p>
-    Super fier de mes effets spéciaux, que j'ai trouvé un peu par hasard.
+    Une anim affichant des étoiles qui avancent.
     <br><br>
-    Des potes l'avait mis sur un ordi du lycée, en cours de TSA. (Moi j'étais pas là, je faisait option IESP). Je suis sûr que tout ça ne s'appelle plus du tout comme ça maintenant.
+    Vous aurez sûrement remarqué que pour saisir le nombre d'étoiles et pour activer les effets spéciaux, les touches du pavé numérique ne fonctionnent pas. Les chiffres du clavier fonctionnent, mais il ne faut pas appuyer sur shift. Je ne sais pas trop pourquoi ça fait ça. J'aurais tendance à dire que c'est plus de la faute de dosbox-js que de mon programme. Mais je n'ai pas cherché.
     <br><br>
-    C'est idiot de forcer l'utilisateur à indiquer un param. J'ai dû changer du code dans mon site web rien que pour ça !
+    Je suis super fier de mes effets spéciaux. Je les ais trouvés un peu par hasard. Dans mon code, je m'étais planté à un moment. J'ajoutais l'accélération en X aux mouvements en Y, et vice-versa. Ça donne un peu l'impression que les étoiles tournent. J'ai ensuite testé plein d'autres échanges de coordonnées, et j'ai gardés ceux qui avaient le plus la classe.
     <br><br>
-    Comme d'hab, des insultes à l'utilisateur si il ne spécifie pas un nombre en paramètre. Tellement classe.
+    Des potes l'avaient mis sur un ordi du lycée, en cours de TSA. Moi j'étais pas là, je faisait option IESP. J'aurais aimé avoir l'avis des gens, quelque chose du genre : "Ouah, c'est trop bien. C'est toi qui a codé ça. Comment t'as fais ?".
+    <br><br>
+    J'en garde des super bons souvenirs, de ces cours d'IESP. C'était le samedi matin. Pendant la récré, j'allais chercher le cahier de texte de la classe en TSA. Et pleins de gens me disaient de me barrer parce que j'avais rien à foutre là. Super. Je suis sûr que maintenant, ça ne s'appelle plus du tout "IESP" ni "TSA".
     <br><br>
     <br><br>
-    Concernant le code :
+    Sinon, le jeu oblige l'utilisateur à spécifier un paramètre en ligne de commande, pour définir le ralentissement du jeu. C'est stupide. Il aurait mieux valu accepter l'exécution sans paramètres, et prendre une valeur par défaut. J'ai dû changer du code dans mon site web rien que pour ça ! (Et le changement est moche, mais on n'est plus à ça près).
     <br><br>
-    Pour effacer le texte, on réécrit exactement le même texte, exactement au même endroit, mais en noir. C'est bien dégueux comme méthode.
+    Comme d'hab', le programme insulte l'utilisateur s'il spécifie autre chose qu'un nombre en paramètre ou au moment d'indiquer le nombre d'étoiles. Ça avait tellement l'air rebelle et non-conventionnel à l'époque. Et je ne vous parle meme pas de la variable de test qui prend la valeur 666 quand la saisie est incorrecte. J'suis un fou moi, j'ai peur de rien.
     <br><br>
-    Normalement on fout un rectangle noir. Là, ça force l'ordi à refaire du rendu de texte juste pour effacer quelque chose.
     <br><br>
-    Il y a une putain d'erreur d'indentation !! Lorsque c'est le moment d'afficher le texte, on l'écrit au même endroit, avec la même couleur, autant de fois qu'il y a d'étoiles !!! C'est bien pire que la mignonne petite erreur de réécrire le texte en noir pour l'effacer.
+    Concernant les horreurs dans le code :
     <br><br>
-    Je suis désolé pour cette horreur.
+    Pour effacer le texte affiché au début de l'animation, je réécris exactement le même texte, exactement au même endroit, mais en noir. C'est bien dégueux comme méthode. Normalement, on dessine un rectangle noir, c'est quand même plus simple. Là, ça force l'ordi à refaire du rendu de texte pour rien.
     <br><br>
-    Les magnifiques noms de variables : a, b, c.
-    Super explicite.
-    Surtout que je m'en sers parfois pour des trucs différents.
+    Il y a erreur d'indentation énorme !! Juste après la ligne "if Texte&lt;100001 then begin"
     <br><br>
-    Ça c'est dégueu :
+    Cette erreur a pour conséquence qu'au moment d'afficher le texte, on le réécrit au même endroit, avec la même couleur, autant de fois qu'il y a d'étoiles !!! C'est bien pire que la mignonne petite erreur de réécrire le texte en noir pour l'effacer.
+    <br><br>
+    Désolé, je suis vraiment un vilain.
+    <br><br>
+    On remarquera, bien évidemment, les noms de variables super explicites : "a", "b", "c". D'autant plus cossu que je m'en sers parfois pour des actions totalement différentes.
+    <br><br>
+    Et pour finir, ça, c'est dégueu :
     <br><br>
     Repeat
     <br>
@@ -57,9 +62,9 @@
     <br>
     Until b&lt;&gt;0;
     <br><br>
-    Juste pour avoir un random sans le 0.
-
+    C'est une boucle, qui peut potentiellement durer très très longtemps si on n'a pas de chance. Tout ça pour avoir un nombre aléatoire entre -1 et 1, mais sans le 0. Bravo !
   </p>
+
 
 
   <div class="sourcecode">
