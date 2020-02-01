@@ -1,0 +1,198 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=turn">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Turn - Code source</h1>
+
+  <div>
+    <a href="turn.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    bla
+    <br><br>
+    blou
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+<span class="code-keyword">uses</span> dos,dosfile,Crt;
+
+<span class="code-keyword">Const</span>
+  Larg=80;
+  Haut=10;
+
+<span class="code-keyword">Type</span>
+  Screen=<span class="code-keyword">Array</span>[0..199,0..319] <span class="code-keyword">of</span> Byte;
+  PElement=^TElement;
+  Telement=Screen;
+
+<span class="code-keyword">var</span>
+  Video,Bouffeur:PElement;
+  Eye:<span class="code-keyword">Array</span>[0..79,0..9] <span class="code-keyword">of</span> Byte;
+  ScreenY1,ScreenY2,ScreenX1,ScreenX2:Integer;
+  i,j:Integer;
+
+<span class="code-keyword">Procedure</span> MegaScreen;
+<span class="code-keyword">var</span> x,y:integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">Asm</span>
+    <span class="code-assembler">Mov AH,$0000;
+    Mov AL,$0013;
+    Int $10;</span>
+  <span class="code-keyword">end</span>;
+  Video:=Addr(Mem[$A000:$0000]);
+  New(Bouffeur);
+  <span class="code-keyword">for</span> y:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">for</span> x:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Video^[y,x]:=0;
+    Bouffeur^[y,x]:=0;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DefinePal;
+<span class="code-keyword">var</span> Pal:<span class="code-keyword">Array</span>[0..4,0..2] <span class="code-keyword">of</span> Byte;Reg:Registers;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 2 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 1 <span class="code-keyword">do</span> Pal[j,i]:=0;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 2 <span class="code-keyword">do</span> Pal[2,i]:=63;
+  Pal[3,0]:=63;
+  Pal[3,1]:=58;
+  Pal[3,2]:=0;
+  Pal[4,0]:=60;
+  Pal[4,1]:=47;
+  Pal[4,2]:=26;
+  Reg.AH:=$0010;
+  Reg.AL:=$0012;
+  Reg.BX:=$0000;
+  Reg.CX:=$0005;
+  Reg.ES:=Seg(Pal);
+  Reg.DX:=Ofs(Pal);
+  Intr($10,Reg);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Affiche;
+<span class="code-keyword">var</span> i:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=ScreenY1 <span class="code-keyword">to</span> ScreenY2 <span class="code-keyword">do</span> Move(Bouffeur^[i,ScreenX1],Video^[i,ScreenX1],ScreenX2-ScreenX1+1);
+  ScreenX1:=319;
+  ScreenX2:=0;
+  ScreenY1:=199;
+  ScreenY2:=0;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> Draw(x1,y1,x2,y2:Integer);
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">if</span> ScreenX1&gt;x1 <span class="code-keyword">then</span> ScreenX1:=x1;
+  <span class="code-keyword">if</span> ScreenX2&lt;x2 <span class="code-keyword">then</span> ScreenX2:=x2;
+  <span class="code-keyword">if</span> ScreenY1&gt;y1 <span class="code-keyword">then</span> ScreenY1:=y1;
+  <span class="code-keyword">if</span> ScreenY2&lt;y2 <span class="code-keyword">then</span> ScreenY2:=y2;
+  <span class="code-keyword">if</span> ScreenX1&lt;0 <span class="code-keyword">then</span> ScreenX1:=0;
+  <span class="code-keyword">if</span> ScreenX2&gt;319 <span class="code-keyword">then</span> ScreenX2:=319;
+  <span class="code-keyword">if</span> ScreenY1&lt;0 <span class="code-keyword">then</span> ScreenY1:=0;
+  <span class="code-keyword">if</span> ScreenY2&gt;199 <span class="code-keyword">then</span> ScreenY2:=199;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> DarkSquare(x1,y1,x2,y2:Integer);
+<span class="code-keyword">var</span> i,j:Integer;
+<span class="code-keyword">begin</span>
+  <span class="code-keyword">for</span> i:=y1 <span class="code-keyword">to</span> y2 <span class="code-keyword">do</span> FillChar(Bouffeur^[i,x1],x2-x1+1,0)
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> TakeSprite;
+<span class="code-keyword">var</span> i,j:Byte;H:Handle;Truc:<span class="code-keyword">Array</span>[0..799] <span class="code-keyword">of</span> Byte;
+<span class="code-keyword">begin</span>
+  FOpen(H,'turn.spr');
+  FRead(H,Truc[0],800);
+  FClose(H);
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 79 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 9 <span class="code-keyword">do</span> Eye[i,j]:=Truc[i+80*j];
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> TheEye(X,Y,NoModulatedAngle:Byte;CoefSize:Real);<span class="code-comment">{0&lt;angle&lt;200}</span>
+<span class="code-keyword">var</span> EcranX,EcranY,RoundedX,RoundedY,L,H:Integer;ImageX,ImageY,ax,ay,bx,by,MemoryX,MemoryY:Real;Angle:Byte;
+<span class="code-keyword">begin</span>
+  Angle:=NoModulatedAngle <span class="code-keyword">mod</span> 200;
+  ax:=Cos((Angle/100)*Pi);
+  ay:=Sin((Angle/100)*Pi);
+  <span class="code-keyword">if</span> Angle in [0..50] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    L:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*ax)+1)/CoefSize);
+    H:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*ay)+1)/CoefSize);
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> Angle in [51..100] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    L:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*-ax)+1)/CoefSize);
+    H:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*ay)+1)/CoefSize);
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> Angle in [100..150] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    L:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*-ax)+1)/CoefSize);
+    H:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*-ay)+1)/CoefSize);
+  <span class="code-keyword">end</span> <span class="code-keyword">else</span> <span class="code-keyword">if</span> Angle in [151..199] <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+    L:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*ax)+1)/CoefSize);
+    H:=Trunc(((Haut <span class="code-keyword">div</span> 2+(Larg <span class="code-keyword">div</span> 2)*-ay)+1)/CoefSize);
+  <span class="code-keyword">end</span>;
+  <span class="code-keyword">if</span> Abs(L)&gt;Abs(H) <span class="code-keyword">then</span> H:=L <span class="code-keyword">else</span> L:=H;
+  ax:=ax*CoefSize;
+  ay:=ay*CoefSize;
+  bx:=ay;
+  by:=-ax;
+<span class="code-comment">{  if L&lt;0 then L:=-L;
+  if H&lt;0 then H:=-H;}</span>
+  ImageX:=-L*ax-H*bx;
+  ImageY:=-L*ay-H*by;
+  MemoryX:=ImageX;
+  MemoryY:=ImageY;
+  <span class="code-keyword">for</span> EcranY:=Y-H <span class="code-keyword">to</span> Y+H <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    ImageX:=MemoryX;
+    ImageY:=MemoryY;
+    <span class="code-keyword">for</span> EcranX:=X-L <span class="code-keyword">to</span> X+L <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+      RoundedX:=Round(ImageX)+Larg <span class="code-keyword">div</span> 2;
+      RoundedY:=Round(ImageY)+Haut <span class="code-keyword">div</span> 2;
+      <span class="code-keyword">if</span> (RoundedX in [0..Larg-1]) <span class="code-keyword">and</span> (RoundedY in [0..Haut-1]) <span class="code-keyword">then</span>
+      Bouffeur^[EcranY,EcranX]:=Eye[RoundedX,RoundedY];
+      ImageX:=ImageX+ax;
+      ImageY:=ImageY+ay;
+    <span class="code-keyword">end</span>;
+    MemoryX:=MemoryX+bx;
+    MEmoryY:=MemoryY+by;
+  <span class="code-keyword">end</span>;
+  Draw(X-L,Y-H,X+L,Y+H);
+  Affiche;
+  DarkSquare(X-L,Y-H,X+L,Y+H);
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">begin</span>
+  MegaScreen;
+  DefinePal;
+  TakeSprite;
+  i:=100;
+  j:=0;
+  <span class="code-keyword">Repeat</span>
+    TheEye(160,100,i,0.75+0.002*Abs(j));
+    Inc(i);
+    Inc(j);
+    <span class="code-keyword">if</span> j=700 <span class="code-keyword">then</span> j:=-700;
+    <span class="code-keyword">if</span> i=200 <span class="code-keyword">then</span> i:=0;
+  <span class="code-keyword">Until</span> keypressed;
+  Dispose(Bouffeur);
+<span class="code-keyword">end</span>.
+
+</pre>
+
+  </div>
+
+</body>
+
+</html>
