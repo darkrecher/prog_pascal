@@ -57,9 +57,9 @@
 <span class="code-keyword">var</span> x,y:integer;
 <span class="code-keyword">begin</span>
   <span class="code-keyword">Asm</span>
-    Mov AH,$0000;
+    <span class="code-assembler">Mov AH,$0000;
     Mov AL,$0013;
-    Int $10;
+    Int $10;</span>
   <span class="code-keyword">end</span>;
   Video:=Addr(Mem[$A000:$0000]);
   New(Bouffeur);
