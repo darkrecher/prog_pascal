@@ -51,11 +51,19 @@ Si ce n'est toujours pas OK, c'est que le Free Pascal a été installé à un au
 
 #### artifice.exe
 
-`cd C:\repo_git\prog_pascal\animation`
+`cd C:\repo_git\prog_pascal\recompilations_ok\animation`
 
 `fpc artifice.pas`
 
+#### hypspace.exe
+
+`cd C:\repo_git\prog_pascal\recompilations_ok\animation`
+
+`fpc hypspace.pas`
+
 #### boutons.exe
+
+TODO : c'est pas ce chemin là, et je suis pas sûr que le chemin actuel sera le chemin définitif.
 
 `cd C:\repo_git\prog_pascal\divers`
 
