@@ -67,6 +67,12 @@ def palette_from_lbm_data(bytes_lbm_block, cursor=0, verbose=True):
         # C'est étrange, je ne me souviens pas qu'il fallait multiplier par 4
         # toutes les valeurs RVB de la palette. Mais manifestement, c'est ce qu'il
         # faut faire pour re-obtenir les images des jeux. Donc multiplions.
+        #
+        # Et si je fais une bête multiplication par 4, la quantité maximale pour une
+        # valeur RVB est de 252 (63*4) et non pas 256. Je ne sais plus du tout
+        # comment c'était géré à l'époque. J'ai cherché un peu sur internet, et je n'ai
+        # pas trouvé d'info.
+        # https://wikimili.com/en/Multi-Color_Graphics_Array
         (red*color_factor, blue*color_factor, green*color_factor)
         for (red, blue, green)
         in zip(
