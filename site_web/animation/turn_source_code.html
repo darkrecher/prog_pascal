@@ -23,16 +23,30 @@
 
   <div>
     <a href="turn.pas">&gt; Télécharger le code source (encodage CP437)</a>
+    <br>
+    <a href="turn.spr">&gt; Télécharger le fichier image.</a>
   </div>
 
   <p>
-    bla
+    Une animation avec des yeux qui tournent. Elle est super méga lente. Même directement sous Dos, c'était lent. Pourtant j'avais essayé d'optimiser au mieux. Pour chaque affichage de l'image tournée, il n'y a qu'un seul calcul de cosinus et un seul calcul de sinus. Après c'est juste deux boucles imbriquées.
     <br><br>
-    blou
+    Sous Dos, on voyait bien que c'était mon code qui était lent, et pas tout le contexte autour. Car au moment de l'anim où l'image des yeux est plus petite, les boucles imbriquées ont moins d'itérations à faire, et ça tournait plus rapidement.
     <br><br>
+    Maintenant, c'est les cartes graphiques qui font ce boulot de rotation et mise à l'échelle. Et si on veut faire des trucs plus compliqués, on fait péter des matrices (genre numpy en python), ça va beaucoup plus vite.
+    <br><br>
+    L'image des yeux est stockée dans le fichier "turn.spr". Les couleurs des pixels sont écrites les unes après les autres dans le fichier. Les dimensions de l'image et la palette de couleur ne sont même pas intégrés dedans.
+    <br><br>
+    L'image décodée et repaletisée correspond à ça :
+    <br>
     <img src="../img/turn_spr.png">
     <br><br>
-    rebla
+    C'était censé représenter les yeux de la fille dont j'étais amoureux au lycée. Elle mettait un tout petit peu de maquillage jaune sur le haut des yeux, je trouvais ça très joli. C'est la même personne que celle dont je parle dans le jeu "Pong". Tout le monde s'en fiche un peu, mais c'est pas grave.
+    <br><br>
+    Au niveau des horreurs du code source, rien de spécialement horrible, ce qui est un peu étonnant par rapport aux autres programmes que j'ai pu faire. Il y a des "div 2" un peu partout, sur des valeurs que j'aurais pu pré-calculer. Et l'une des variables est orthographiée MEmoryY (avec un E majuscule) au lieu de MemoryY. C'est tout.
+    <br><br>
+    Le coefficient de taille (définissant le facteur de mise à l'échelle) est calculé un peu bizarrement. Il varie de -700 à +700, mais pour avoir le vrai coef, on prend la valeur absolue. Du coup, ça descend, puis ça monte, puis ça redescend, etc.
+    <br><br>
+    Ça aurait peut-être été plus simple de faire varier de 700 à 0, puis de 0 à 700, puis re de 700 à 0, etc. Y'aurait pas eu besoin de se prendre la tête avec des valeurs absolues.
   </p>
 
   <div class="sourcecode">
