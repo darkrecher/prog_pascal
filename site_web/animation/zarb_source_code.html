@@ -1,0 +1,135 @@
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Réchèr : animations en Turbo Pascal dans un émulateur js-dos</title>
+  <link href="../css_and_fonts/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+  <div>
+    <a href="anim_summary.html">&lt; Retour aux sommaire des animations</a>
+  </div>
+  <br>
+
+  <div>
+    <a href="js_dos_player_anim.html?appfilename=zarb">&gt; Voir cette anim</a>
+  </div>
+
+  <h1>Zarb - Code source</h1>
+
+  <div>
+    <a href="zarb.pas">&gt; Télécharger le code source (encodage CP437)</a>
+  </div>
+
+  <p>
+    bla
+    <br><br>
+    blou
+    <br><br>
+  </p>
+
+  <div class="sourcecode">
+
+<pre>
+
+<span class="code-keyword">Uses</span> Crt,MCGAGraf;
+
+<span class="code-keyword">Const</span>
+  MorphSpeed=4;
+
+<span class="code-keyword">var</span>
+  Screen:PScreen;
+
+<span class="code-keyword">Function</span> Morph:Boolean;
+<span class="code-keyword">var</span> i,j:Integer;Result:Boolean;Source,Dest:Byte;
+<span class="code-keyword">begin</span>
+  Result:=False;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    Source:=Screen^[j,i];
+    Dest:=Buffer^[j,i];
+    <span class="code-keyword">if</span> Abs(Source-Dest)&lt;MorphSpeed <span class="code-keyword">then</span> Buffer^[j,i]:=Source <span class="code-keyword">else</span> <span class="code-keyword">begin</span>
+      <span class="code-keyword">if</span> Source&lt;Dest <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Result:=True;
+        Dec(Buffer^[j,i],MorphSpeed);
+      <span class="code-keyword">end</span>;
+      <span class="code-keyword">if</span> Source&gt;Dest <span class="code-keyword">then</span> <span class="code-keyword">begin</span>
+        Result:=True;
+        Inc(Buffer^[j,i],MorphSpeed);
+      <span class="code-keyword">end</span>;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+  Morph:=Result;
+  AfficheAll;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">Procedure</span> MakeImage;
+<span class="code-keyword">var</span> i,j,x,y:Integer;Choice,A,B,C,D:Byte;
+<span class="code-keyword">begin</span>
+  Choice:=Random(12);
+  A:=Random(10)+1;
+  B:=Random(10)+1;
+  C:=Random(7)-3;
+  D:=Random(7)-3;
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    x:=i-160;
+    y:=j-100;
+    <span class="code-keyword">if</span> y=0 <span class="code-keyword">then</span> y:=1;
+    <span class="code-keyword">if</span> x=0 <span class="code-keyword">then</span> x:=1;
+    <span class="code-keyword">Case</span> Choice <span class="code-keyword">of</span>
+      0:Screen^[j,i]:= (x*16 <span class="code-keyword">div</span> y+y*16 <span class="code-keyword">div</span> x+y+x)*A <span class="code-keyword">div</span> B ;
+      1:Screen^[j,i]:=(x*16 <span class="code-keyword">div</span> y+y*16 <span class="code-keyword">div</span> x)*A <span class="code-keyword">div</span> B ;
+      2:Screen^[j,i]:=x*y*A <span class="code-keyword">div</span> B ;
+      6:Screen^[j,i]:=x*y*y <span class="code-keyword">div</span> B ;
+      7:Screen^[j,i]:=x*x*y <span class="code-keyword">div</span> B ;
+      11:Screen^[j,i]:=(x*x*y+y*y*x) <span class="code-keyword">div</span> B ;
+      4:Screen^[j,i]:=(x*y <span class="code-keyword">div</span> 2+x*y*y <span class="code-keyword">div</span> 4)*A <span class="code-keyword">div</span> B ;
+      5:Screen^[j,i]:=(D*x*x+x*y)*A <span class="code-keyword">div</span> B ;
+      3:Screen^[j,i]:=(D*y*y+x*y)*A <span class="code-keyword">div</span> B ;
+      8..9:Screen^[j,i]:=(D*y*y+D*x*x+x*y) <span class="code-keyword">div</span> B ;
+      10:Screen^[j,i]:=(D*y*y-D*x*x+x*y) <span class="code-keyword">div</span> B ;
+    <span class="code-keyword">end</span>;
+  <span class="code-keyword">end</span>;
+<span class="code-keyword">end</span>;
+
+<span class="code-keyword">var</span> i,j,x,y:Integer;
+
+<span class="code-keyword">begin</span>
+  New(Screen);
+  MCGAScreen;
+  Degrade(0,0,0,0,63,0,0,63);
+  Degrade(64,0,0,63,127,0,63,63);
+  Degrade(128,0,63,63,191,0,63,0);
+  Degrade(192,0,63,0,255,0,0,0);
+  DefinePal;
+  Randomize;
+
+  <span class="code-keyword">for</span> i:=0 <span class="code-keyword">to</span> 319 <span class="code-keyword">do</span> <span class="code-keyword">for</span> j:=0 <span class="code-keyword">to</span> 199 <span class="code-keyword">do</span> <span class="code-keyword">begin</span>
+    x:=i-160;
+    y:=j-100;
+    <span class="code-keyword">if</span> y=0 <span class="code-keyword">then</span> y:=1;
+    <span class="code-keyword">if</span> x=0 <span class="code-keyword">then</span> x:=1;
+    Buffer^[j,i]:=(y*y+30*x*x+y*y*y) <span class="code-keyword">div</span> 64 ;
+  <span class="code-keyword">end</span>;
+  AfficheAll;
+  Delay(250);
+
+  <span class="code-keyword">Repeat</span>
+    MakeImage;
+    <span class="code-keyword">While</span> Morph <span class="code-keyword">and</span> <span class="code-keyword">not</span>(keypressed) <span class="code-keyword">do</span>;
+    Delay(500);
+  <span class="code-keyword">Until</span> keypressed;
+  CloseScreen;
+  Dispose(Screen);
+<span class="code-keyword">end</span>.
+
+</pre>
+
+  </div>
+
+</body>
+
+</html>
