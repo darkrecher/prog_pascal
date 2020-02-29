@@ -26,10 +26,44 @@
   </div>
 
   <p>
-    bla
+    Calcul d'images psychédéliques à partir de formules mathématiques toutes simples. La couleur d'un pixel est déduite uniquement à partir de ses coordonnées et de quelques constantes. Par exemple : couleur = x² * y / 3.
     <br><br>
-    blou
+    Je me souviens que j'essayais un peu tout et n'importe quoi, je regardais si ça faisait quelque chose de joli, et si oui je le rajoutais. J'avais aucune idée de ce que ça allait donner à chaque fois. C'était très expérimental et très rigolo.
     <br><br>
+    La première image calculée est toujours la même, et sa formule ne fait pas partie de celle qui peuvent être choisie pour les images d'après. Je voulais être sûr que l'animation commençait avec quelque chose que je trouvais cool. Le risque avec des images calculées un peu au hasard, c'est que certaines ne sont pas géniales.
+    <br><br>
+    Voici le calcul de la première image :
+    <br>
+    couleur_pixel = (y² + 30*x² + y³) / 64
+    <br>
+    L'origine (x=0, y=0) est au milieu de l'écran.
+    <br><br><br>
+    L'un de mes potes avait regardé mon code source, et il m'avait dit : "Ta boucle while avec rien dedans, c'est space". Il avait raison, et j'étais super fier de ma trouvaille.
+    <br><br>
+    Vers la fin du code source se trouve cette ligne :
+    <br>
+    While Morph and not(keypressed) do;
+    <br><br>
+    Normalement, on met quelque chose entre le "do" et le point-virgule finale. Soit une seule instruction, soit plusieurs, avec un "begin" et un "end". Moi, je n'ai rien mis, parce que j'avais rien besoin de mettre.
+    <br><br>
+    Cette boucle gère la transition entre deux images. On augmente ou on diminue la couleur de chaque pixel, de façon à aller progressivement de l'image précédente vers la suivante. La fonction "Morph" s'occupe d'effectuer un step de transition. Si elle a dû modifier un seul pixel, elle renvoie True, sinon, elle renvoie False, et cela signifie que la transition est finie.
+    <br><br>
+    La fonction "Morph" a donc deux buts : effectuer un step de transition, et indiquer s'il faut faire encore d'autres steps. Donc on la met dans la condition de la boucle While, mais il n'y a plus rien à faire dans le code même du While. Pour finir, j'ai juste rajouté "not(keypressed)", pour arrêter immédiatement la boucle (puis le programme) si on appuie sur une touche.
+    <br><br><br>
+    Concernant les horreurs dans le code source, il y a de nombreuses petites bourdinettes, mais on a vu franchement pire dans mes autres programmes.
+    <br><br>
+    Dans la fonction MakeImage, j'initialise une variable "C" à une valeur aléatoire (comme "A" et "B"). Mais je ne m'en sers à aucun moment.
+    <br><br>
+    Toujours dans cette fonction, le choix du type d'image est réalisé par un case, qui est exécuté à chaque tour de boucle, donc à chaque calcul de pixel. Le choix du case est toujours le même, mais on le répète 64000 fois. J'aurais pu inverser la boucle et le case pour que l'exécution soit plus rapide, ou bien trouver une astuce un peu plus intelligente avec un pointeur sur une fonction ou quelque chose comme ça.
+    <br><br>
+    Un peu de code en doublon entre "MakeImage", et le début du programme principal, où je calcule la toute première image. C'est pas classe.
+    <br><br>
+    Dans la fonction "Morph", j'ai l'impression d'avoir inversé les noms de variable "Source" et "Dest" (couleur du pixel de départ et couleur du pixel d'arrivée). Mais pas forcément, ça dépend comment on le voit, parce que je gère la transition avec mes deux buffers de mémoire vidéo. C'est une sorte de double buffering bizarre, et du point de vue du double buffer, la source et la dest sont dans l'autre sens. Enfin je sais pas trop. Bon je m'embrouille moi-même dans cette explication. Passons à autre chose.
+    <br><br>
+    La formule de calcul de la couleur du pixel implique parfois de diviser par la coordonnée x ou y. Or ces deux variables peuvent valoir 0, puisque l'origine est au milieu de l'écran. Pour éviter que ça plante avec une division par zéro, ces deux lignes de code ont été ajoutées : "if y=0 then y:=1;"
+    "if x=0 then x:=1;". Déjà c'est un peu bourrin, parce que c'est pas tout le temps nécessaire. Et ça aurait été plus subtil d'ajouter une mini-fonction et de ne l'utiliser que lorsque c'est nécessaire. Un truc de ce style : "x div NotZero(y)". Mais non.
+    <br><br>
+    De plus, ces deux lignes de code de non-zérotisation ont également été ajoutée pour le calcul de l'image initiale, qui ne comporte aucune division par x ou par y.
   </p>
 
   <div class="sourcecode">
